@@ -1,0 +1,425 @@
+= golang self learning & boot camp
+:toc: manual
+
+== Getting started
+
+* https://golang.org/doc/
+
+=== 版本查看
+
+[source, go]
+----
+$ go version
+go version go1.16.2 darwin/amd64
+----
+
+=== package, import, main
+
+[source, go]
+----
+package main
+  
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+----
+
+=== 运行 main 方法
+
+[source, go]
+----
+$ go run hello.go 
+Hello, World!
+----
+
+=== 调运外部方法
+
+[source, go]
+----
+package main
+  
+import "fmt"
+
+import "rsc.io/quote"
+
+func main() {
+    fmt.Println("Hello, World!")
+    fmt.Println(quote.Glass())
+    fmt.Println(quote.Go())
+    fmt.Println(quote.Hello())
+    fmt.Println(quote.Opt())
+}
+----
+
+=== Define a External Module
+
+[source, go]
+----
+$ cat greetings/greetings.go 
+package greetings
+
+import "fmt"
+
+// Hello returns a greeting for the named person.
+func Hello(name string) string {
+    // Return a greeting that embeds the name in a message.
+    message := fmt.Sprintf("Hi, %v. Welcome!", name)
+    return message
+}
+----
+
+=== Call a External Module
+
+[source, go]
+----
+package main
+  
+import (
+    "fmt"
+    "rsc.io/quote"
+    "cloudadc.github.io/greetings"
+)
+
+func main() {
+    fmt.Println("Hello, World!")
+
+    fmt.Println(quote.Glass())
+    fmt.Println(quote.Go())
+    fmt.Println(quote.Hello())
+    fmt.Println(quote.Opt())
+
+    message := greetings.Hello("Kylin")
+    fmt.Println(message)
+}
+----
+
+=== 依赖配置
+
+[source, go]
+----
+go mod init cloudadc.github.io/hello
+go mod tidy
+go mod init cloudadc.github.io/greetings
+go mod edit -replace=cloudadc.github.io/greetings=../greetings
+go mod tidy
+----
+
+=== Return and handle an error
+
+[source, go]
+----
+package greetings
+  
+import (
+    "errors"
+    "fmt"
+)
+
+func Hello(name string) (string, error) {
+
+    if name == "" {
+        return "", errors.New("empty name")
+    }
+
+    message := fmt.Sprintf("Hi, %v. Welcome!", name)
+    return message, nil
+}
+----
+
+=== Return a random greetin
+
+[source, go]
+----
+package greetings
+  
+import (
+    "errors"
+    "fmt"
+    "math/rand"
+    "time"
+)
+
+func Hello(name string) (string, error) {
+
+    if name == "" {
+        return "", errors.New("empty name")
+    }
+
+    message := fmt.Sprintf(randomFormat(), name)
+    return message, nil
+}
+
+func init() {
+    fmt.Println("cloudadc.github.io/greetings init");
+    rand.Seed(time.Now().UnixNano())
+}
+
+func randomFormat() string {
+
+    formats := []string{
+        "Hi, %v. Welcome!",
+        "Great to see you, %v!",
+        "Hail, %v! Well met!",
+    }
+
+    return formats[rand.Intn(len(formats))]
+}
+----
+
+=== 添加参数为数组的方法
+
+[source, go]
+----
+package greetings
+  
+import (
+    "errors"
+    "fmt"
+    "math/rand"
+    "time"
+)
+
+func Hello(name string) (string, error) {
+
+    if name == "" {
+        return "", errors.New("empty name")
+    }
+
+    message := fmt.Sprintf(randomFormat(), name)
+    return message, nil
+}
+
+func Hellos(names []string) (map[string]string, error) {
+
+    messages := make(map[string]string)
+    for _, name := range names {
+        message, err := Hello(name)
+        if err != nil {
+            return nil, err
+        }
+        messages[name] = message
+    }
+
+    return messages, nil
+}
+
+func init() {
+    fmt.Println("cloudadc.github.io/greetings init");
+    rand.Seed(time.Now().UnixNano())
+}
+
+func randomFormat() string {
+
+    formats := []string{
+        "Hi, %v. Welcome!",
+        "Great to see you, %v!",
+        "Hail, %v! Well met!",
+    }
+
+    return formats[rand.Intn(len(formats))]
+}
+----
+
+=== Main 方法
+
+[source, go]
+----
+package main
+  
+import (
+    "fmt"
+    "log"
+
+    "rsc.io/quote"
+    "cloudadc.github.io/greetings"
+)
+
+func main() {
+    fmt.Println("Hello, World!")
+
+    fmt.Println(quote.Glass())
+    fmt.Println(quote.Go())
+    fmt.Println(quote.Hello())
+    fmt.Println(quote.Opt())
+
+    log.SetPrefix("greetings: ")
+    log.SetFlags(0)
+
+    names := []string{"Gladys", "Samantha", "Darrin", "Kylin"}
+    messages, err := greetings.Hellos(names)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(messages)
+
+}
+----
+
+=== 运行 Main 方法
+
+[source, go]
+----
+$ go run hello.go 
+cloudadc.github.io/greetings init
+Hello, World!
+I can eat glass and it doesn't hurt me.
+Don't communicate by sharing memory, share memory by communicating.
+Hello, world.
+If a program is too slow, it must have a loop.
+map[Darrin:Great to see you, Darrin! Gladys:Hail, Gladys! Well met! Kylin:Hail, Kylin! Well met! Samantha:Hail, Samantha! Well met!]
+----
+
+=== 单元测试用例
+
+[source, go]
+----
+package greetings
+  
+import (
+    "testing"
+    "regexp"
+)
+
+func TestHelloName(t *testing.T) {
+    name := "Gladys"
+    want := regexp.MustCompile(`\b`+name+`\b`)
+    msg, err := Hello("Gladys")
+    if !want.MatchString(msg) || err != nil {
+        t.Fatalf(`Hello("Gladys") = %q, %v, want match for %#q, nil`, msg, err, want)
+    }
+}
+
+func TestHelloEmpty(t *testing.T) {
+    msg, err := Hello("")
+    if msg != "" || err == nil {
+        t.Fatalf(`Hello("") = %q, %v, want "", error`, msg, err)
+    }
+}
+----
+
+=== 运行单元测试
+
+[source, go]
+----
+$ go test -v
+cloudadc.github.io/greetings init
+=== RUN   TestHelloName
+--- PASS: TestHelloName (0.00s)
+=== RUN   TestHelloEmpty
+--- PASS: TestHelloEmpty (0.00s)
+PASS
+ok  	cloudadc.github.io/greetings	0.654s
+----
+
+=== 编译
+
+[source, go]
+----
+go build
+----
+
+=== 运行可执行文件
+
+[source, go]
+----
+$ ./hello 
+cloudadc.github.io/greetings init
+Hello, World!
+I can eat glass and it doesn't hurt me.
+Don't communicate by sharing memory, share memory by communicating.
+Hello, world.
+If a program is too slow, it must have a loop.
+map[Darrin:Hail, Darrin! Well met! Gladys:Hi, Gladys. Welcome! Kylin:Hail, Kylin! Well met! Samantha:Great to see you, Samantha!]
+----
+
+== Syntax
+
+[cols="2,5a"]
+|===
+|Name|Syntax
+
+|main
+|
+
+[source, go]
+----
+func main() {
+
+}
+----
+
+|System Module
+|
+* "fmt"
+* "log"
+* "errors"
+* "math/rand"
+* "time"
+
+|package
+|
+[source, go]
+----
+package main
+----
+
+|method
+|
+[source, go]
+----
+func FUNC_NAME(PARAMETER TYPE)(RETURN, ERROR)
+----
+
+* Public method start with Upper word
+* Provate methos start wuth Lower word
+
+|import
+|Separate System Module and external/customized module
+
+[source, go]
+----
+import (
+    "fmt"
+    "log"
+
+    "rsc.io/quote"
+    "cloudadc.github.io/greetings"
+)
+----
+
+|Basic Dev Commands
+|
+[source, go]
+.*init*
+----
+go mod init cloudadc.github.io/hello
+----
+
+[source, go]
+.*tidy*
+----
+go mod tidy
+----
+
+[source, go]
+.*replace(reference local module)*
+----
+go mod edit -replace=cloudadc.github.io/greetings=../greetings
+----
+
+[source, go]
+.*test*
+----
+go test -v
+----
+
+[source, go]
+.*build*
+----
+go build
+----
+|===
+
