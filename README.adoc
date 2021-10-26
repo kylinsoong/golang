@@ -95,15 +95,38 @@ func main() {
 }
 ----
 
+NOTE: `cloudadc.github.io/greetings` is external module, finish the below `依赖配置` can run `hello.go` to call external `greetings.go`.
+
 === 依赖配置
 
 [source, go]
+.*1. initi module greetings*
 ----
-go mod init cloudadc.github.io/hello
-go mod tidy
-go mod init cloudadc.github.io/greetings
+cd ../greetings/ && go mod init cloudadc.github.io/greetings
+----
+
+[source, go]
+.*2. init module hello*
+----
+cd ../hello/ && go mod init cloudadc.github.io/hello
+----
+
+[source, go]
+.*3. update module to replace external module*
+----
 go mod edit -replace=cloudadc.github.io/greetings=../greetings
+----
+
+[source, go]
+.*4. add module requirements and sums*
+----
 go mod tidy
+----
+
+[source, go]
+.*5. run*
+----
+go run hello.go 
 ----
 
 === Return and handle an error
@@ -128,7 +151,17 @@ func Hello(name string) (string, error) {
 }
 ----
 
-=== Return a random greetin
+TEST THE ERROR HANFLING：
+
+[source, go]
+----
+$ go run hello-err.go 
+cloudadc.github.io/greetings init
+Great to see you, Kylin! <nil>
+ empty name
+----
+
+=== Return a random greeting
 
 [source, go]
 ----
@@ -320,6 +353,8 @@ ok  	cloudadc.github.io/greetings	0.654s
 ----
 go build
 ----
+
+NOTE: 一个module下只有允许有一个 Main 方法。
 
 === 运行可执行文件
 
