@@ -4,11 +4,15 @@ import (
     "fmt"
     "strings"
     "os"
+    "time"
 
     "k8s.io/client-go/kubernetes"
     "k8s.io/client-go/rest"
 
     cisAgent "github.com/kylinsoong/bigip-ctlr/pkg/agent"
+    log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
+    clog "github.com/kylinsoong/bigip-ctlr/pkg/vlogger/console"
+    "github.com/kylinsoong/bigip-ctlr/pkg/writer"
     "github.com/kylinsoong/bigip-ctlr/pkg/appmanager"
     "github.com/kylinsoong/bigip-ctlr/pkg/resource"
 )
@@ -30,7 +34,24 @@ type bigIPSection struct {
 
 var (
     kubeClient         kubernetes.Interface
+    configWriter       writer.Writer
+    agRspChan          chan interface{}
 )
+
+
+
+
+func getConfigWriter() writer.Writer {
+    if configWriter == nil {
+        var err error
+        configWriter, err = writer.NewConfigWriter()
+        if nil != err {
+            log.Fatalf("[INIT] Failed creating ConfigWriter tool: %v", err)
+            os.Exit(1)
+        }
+    }
+    return configWriter
+} 
 
 func getKubeConfig() (*rest.Config, error) {
 
@@ -46,12 +67,26 @@ func getKubeConfig() (*rest.Config, error) {
     return config, nil
 }
 
+func initLogger(logLevel string) error {
+    log.RegisterLogger(log.LL_MIN_LEVEL, log.LL_MAX_LEVEL, clog.NewConsoleLogger())
+                
+    if ll := log.NewLogLevel(logLevel); nil != ll {
+        log.SetLogLevel(*ll)
+    } else {
+        return fmt.Errorf("Unknown log level requested: %s\n" + "    Valid log levels are: DEBUG, INFO, WARNING, ERROR, CRITICAL", logLevel)
+    }
+    return nil 
+} 
+
 func main() {
 
     fmt.Println("F5 BIG-IP Controller Start")
 
+    logLevel := "DEBUG"
+    initLogger(logLevel)
+
     dgPath := strings.Join([]string{resource.DEFAULT_PARTITION, "Shared"}, "/")
-    fmt.Printf("BIG-IP Data Group Path: %s\n", dgPath)
+    log.Infof("BIG-IP Data Group Path: %s", dgPath)
 
     appmanager.RegisterBigIPSchemaTypes()
 
@@ -65,7 +100,7 @@ func main() {
         os.Exit(1)
     }
 
-    fmt.Printf("create kubeClient via %s\n", config.Host)
+    log.Infof("create kubeClient via %s", config.Host)
 
     agent := "as3"
     disableLTM := false
@@ -90,6 +125,49 @@ func main() {
         BigIPPartitions: []string{"partition1", "partition2"},
     }
 
-    fmt.Printf("Create Global Section and BIG-IP Section struct\n%+v\n", gs)
-    fmt.Printf("%v\n", bs)
+    log.Infof("Create Global Section %v, BIG-IP Section struct %v", gs, bs)
+
+
+    pythonBaseDir := ""    
+    subPidCh, err := startPythonDriver(getConfigWriter(), gs, bs, pythonBaseDir)
+    if nil != err {
+        log.Fatalf("Could not initialize subprocess configuration: %v", err)
+    }
+    log.Infof("Current don't has subpid, %v", subPidCh)
+/*
+    subPid := <-subPidCh
+    defer func(pid int) {
+        if 0 != pid {
+            var proc *os.Process
+            proc, err = os.FindProcess(pid)
+            if nil != err {
+                log.Warningf("Failed to find sub-process on exit: %v", err)
+            }
+            err = proc.Signal(os.Interrupt)
+            if nil != err {
+                log.Warningf("Could not stop sub-process on exit: %d - %v", pid, err)
+            }
+        }
+    }(subPid)
+*/
+
+    //agRspChan = make(chan interface{}, 1)
+    //var appMgrParms = getAppManagerParams()
+
+    log.Infof("[INIT] Creating Agent for %v", agent)
+
+    nodePollInterval := 30
+    intervalFactor := time.Duration(nodePollInterval)
+
+    log.Infof("nodePollInterval: %d, intervalFactor: %d", nodePollInterval, intervalFactor)
+    
+
+    log.Infof("Started /metrics and /health service")
+
+    log.Infof("appMgr run")
+
+    
+
+    fmt.Println("F5 BIG-IP Controller End")
+
 }
