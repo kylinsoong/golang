@@ -1,0 +1,8 @@
+= How to run
+
+[source, bash]
+----
+go mod init github.com/kylinsoong/k8s-client-test
+go mod tidy
+go run cmd/k8s-client-test/*.go --log-level=INFO --running-in-cluster=false --kubeconfig=/home/cloud_user_p_ed661062/.kube/config
+----

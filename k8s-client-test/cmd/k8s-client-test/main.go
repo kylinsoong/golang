@@ -8,10 +8,12 @@ import (
 
     "k8s.io/client-go/kubernetes"
     "k8s.io/client-go/rest"
+    "k8s.io/client-go/tools/clientcmd"
 
     "github.com/spf13/pflag"
     "golang.org/x/crypto/ssh/terminal"
 
+    "github.com/kylinsoong/k8s-client-test/pkg/appmanager"
     log "github.com/kylinsoong/k8s-client-test/pkg/vlogger"
     clog "github.com/kylinsoong/k8s-client-test/pkg/vlogger/console"
 )
@@ -26,7 +28,12 @@ var (
     namespaces             *[]string
     inCluster              *bool
     kubeConfig             *string
+    manageConfigMaps       *bool
+    manageIngress          *bool
+
+    kubeClient       kubernetes.Interface
 )
+
 
 func _init() {
     flags = pflag.NewFlagSet("main", pflag.PanicOnError)
@@ -53,7 +60,9 @@ func _init() {
     namespaces = kubeFlags.StringArray("namespace", []string{}, "Optional, Kubernetes namespace(s) to watch. If left blank controller will watch all k8s namespaces")
     inCluster = kubeFlags.Bool("running-in-cluster", true, "Optional, if this controller is running in a kubernetes cluster, use the pod secrets for creating a Kubernetes client.")
     kubeConfig = kubeFlags.String("kubeconfig", "./config", "Optional, absolute path to the kubeconfig file")
-  
+    manageIngress = kubeFlags.Bool("manage-ingress", true, "Optional, specify whether or not to manage Ingress resources")
+    manageConfigMaps = kubeFlags.Bool("manage-configmaps", true, "Optional, specify whether or not to manage ConfigMap resources")
+
     kubeFlags.Usage = func() {
         fmt.Fprintf(os.Stderr, "  Kubernetes:\n%s\n", kubeFlags.FlagUsagesWrapped(width))
     }
@@ -91,16 +100,26 @@ func getKubeConfig() (*rest.Config, error) {
     } else {
         config, err = clientcmd.BuildConfigFromFlags("", *kubeConfig)
     }
-        
     if err != nil {
         log.Fatalf("[INIT] error creating configuration: %v", err)
         return nil, err
     }
-        
     return config, nil
 }
 
+func getAppManagerParams() appmanager.Params {
+        return appmanager.Params{
+                ManageConfigMaps:       *manageConfigMaps,
+                ManageIngress:          *manageIngress,
+        }       
+} 
+
 func main() {
+
+    err := flags.Parse(os.Args)
+    if nil != err {
+        os.Exit(1)
+    }
 
     *logLevel = strings.ToUpper(*logLevel)
     initLogger(*logLevel)
@@ -120,6 +139,11 @@ func main() {
         os.Exit(1)
     }
 
+    var appMgrParms = getAppManagerParams()
+    appMgrParms.KubeClient = kubeClient
+    appMgr := appmanager.NewManager(&appMgrParms)
 
-    
+    fmt.Printf("%+v\n", appMgr)
+
+
 }
