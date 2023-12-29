@@ -42,7 +42,7 @@ func main() {
 // Simulate a controller loop that adds items to the queue
 func controllerLoop(controllerName string, queue workqueue.RateLimitingInterface, wg *sync.WaitGroup) {
 	defer wg.Done()
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 10; i++ {
 		item := fmt.Sprintf("%s-item-%d", controllerName, i)
 		fmt.Printf("Controller %s: Enqueuing item %s\n", controllerName, item)
 		queue.Add(item)

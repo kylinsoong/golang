@@ -4,6 +4,7 @@ import (
     "k8s.io/client-go/kubernetes"
     rest "k8s.io/client-go/rest"
     "k8s.io/client-go/util/workqueue"
+    "k8s.io/client-go/tools/cache"
 )
 
 type Manager struct {
@@ -11,6 +12,10 @@ type Manager struct {
     restClientv1        rest.Interface
     vsQueue      workqueue.RateLimitingInterface
     nsQueue      workqueue.RateLimitingInterface
+    informersMutex sync.Mutex
+    appInformers map[string]*appInformer
+    nsInformer cache.SharedIndexInformer
+    eventNotifier *EventNotifier
 }
 
 type Params struct {
@@ -29,6 +34,8 @@ func NewManager(params *Params) *Manager {
         restClientv1:           params.restClient,
 	vsQueue:                vsQueue,
         nsQueue:                nsQueue,
+        appInformers:           make(map[string]*appInformer),
+        eventNotifier:          NewEventNotifier(params.broadcasterFunc),
     }
 
     return &manager
