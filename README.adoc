@@ -1,4 +1,4 @@
-= golang self learning & boot camp
+= Golang Boot Camp
 :toc: manual
 
 == Getting started
