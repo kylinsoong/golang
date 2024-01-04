@@ -28,10 +28,14 @@ type (
 	}
 )
 
+func NewBroadcasterWrapper() record.EventBroadcaster {
+    return record.NewBroadcaster()
+}
+
 func NewEventNotifier(bfunc NewBroadcasterFunc) *EventNotifier {
 	if nil == bfunc {
 		// No broadcaster func provided (unit testing), use real one.
-		bfunc = record.NewBroadcaster
+		bfunc = NewBroadcasterWrapper
 	}
 	return &EventNotifier{
 		notifierMap:     make(map[string]*NamespaceEventNotifier),

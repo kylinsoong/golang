@@ -26,6 +26,14 @@ type Manager struct {
     eventNotifier           *EventNotifier
     nplStore                map[string]NPLAnnoations
     nplStoreMutex           sync.Mutex
+    agRspChan               chan interface{}
+    WatchedNS               WatchedNamespaces
+    K8sVersion              string
+}
+
+type WatchedNamespaces struct {
+    Namespaces     []string
+    NamespaceLabel string
 }
 
 type ProcessedHostPath struct {
@@ -61,6 +69,7 @@ type Params struct {
     broadcasterFunc        NewBroadcasterFunc
     ManageConfigMaps       bool
     ManageIngress          bool
+    AgRspChan              chan interface{}
 }
 
 func NewManager(params *Params) *Manager {
@@ -75,11 +84,26 @@ func NewManager(params *Params) *Manager {
         nsQueue:                nsQueue,
         appInformers:           make(map[string]*appInformer),
         eventNotifier:          NewEventNotifier(params.broadcasterFunc),
+        agRspChan:              params.AgRspChan,
     }
 
     manager.processedResources = make(map[string]bool)
     manager.processedHostPath.processedHostPathMap = make(map[string]metav1.Time)
     manager.nplStore = make(map[string]NPLAnnoations)
+
+    go manager.agentResponseWorker()
+
+    if nil != manager.kubeClient && nil == manager.restClientv1 {
+        manager.restClientv1 = manager.kubeClient.CoreV1().RESTClient()
+    }
+
+    if nil != manager.kubeClient && nil == manager.restClientv1beta1 {
+        manager.restClientv1beta1 = manager.kubeClient.ExtensionsV1beta1().RESTClient()
+    }
+
+    if nil != manager.kubeClient && nil == manager.netClientv1 {
+        manager.netClientv1 = manager.kubeClient.NetworkingV1().RESTClient()
+    }
 
     return &manager
 
