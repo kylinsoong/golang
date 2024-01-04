@@ -7,16 +7,20 @@ import (
     "strings"
     "os"
     "time"
+    "os/signal"
+    "syscall"
 
     "k8s.io/client-go/kubernetes"
     "k8s.io/client-go/rest"
     "k8s.io/client-go/tools/clientcmd"
+    "k8s.io/apimachinery/pkg/labels"
 
     "github.com/spf13/pflag"
     "golang.org/x/crypto/ssh/terminal"
 
     "github.com/kylinsoong/k8s-client-test/pkg/appmanager"
     "github.com/kylinsoong/k8s-client-test/pkg/pollers" 
+    "github.com/kylinsoong/k8s-client-test/pkg/resource"
     log "github.com/kylinsoong/k8s-client-test/pkg/vlogger"
     clog "github.com/kylinsoong/k8s-client-test/pkg/vlogger/console"
 )
@@ -32,6 +36,7 @@ var (
 
     logLevel         *string
     nodePollInterval *int
+    syncInterval     *int
 
     namespaceLabel         *string
     namespaces             *[]string
@@ -41,6 +46,7 @@ var (
     manageIngress          *bool
     hubMode                *bool
     nodeLabelSelector      *string
+    watchAllNamespaces     bool
 
     kubeClient         kubernetes.Interface
     agRspChan          chan interface{}
@@ -65,6 +71,7 @@ func _init() {
 
     logLevel = globalFlags.String("log-level", "DEBUG", "Optional, logging level")
     nodePollInterval = globalFlags.Int("node-poll-interval", 30, "Optional, interval (in seconds) at which to poll for cluster nodes.")
+    syncInterval = globalFlags.Int("periodic-sync-interval", 30, "Optional, interval (in seconds) at which to queue resources.")
 
     globalFlags.Usage = func() {
         fmt.Fprintf(os.Stderr, "  Global:\n%s\n", globalFlags.FlagUsagesWrapped(width))
@@ -125,8 +132,8 @@ func getKubeConfig() (*rest.Config, error) {
 
 func getk8sVersion() string {
     var versionInfo map[string]string
-    var err error      
-    var vInfo []byte   
+    var err error
+    var vInfo []byte
     rc := kubeClient.Discovery().RESTClient()
     if vInfo, err = rc.Get().AbsPath(versionPathk8s).DoRaw(context.TODO()); err == nil  {
         if er := json.Unmarshal(vInfo, &versionInfo); er == nil  {
@@ -141,6 +148,7 @@ func getAppManagerParams() appmanager.Params {
         ManageConfigMaps:       *manageConfigMaps,
         ManageIngress:          *manageIngress,
         AgRspChan:              agRspChan,
+        HubMode:                *hubMode,
     }
 }
 
@@ -156,7 +164,74 @@ func GetNamespaces(appMgr *appmanager.Manager) {
 
 func setupNodePolling(appMgr *appmanager.Manager, np pollers.Poller, eventChanl <-chan interface{}, kubeClient kubernetes.Interface,) error { 
 
+    err := np.RegisterListener(appMgr.ProcessNodeUpdate)
+    if nil != err {
+        return fmt.Errorf("error registering node update listener: %v", err)
+    }
+
     return nil
+}
+
+func createLabel(label string) (labels.Selector, error) {
+    var l labels.Selector
+    var err error
+    if label == "" {
+       l = labels.Everything()
+    } else {
+        l, err = labels.Parse(label)
+        if err != nil {
+            return nil, fmt.Errorf("failed to parse Label Selector string: %v", err)
+        }
+    }
+    return l, nil
+}
+
+func setupWatchers(appMgr *appmanager.Manager, resyncPeriod time.Duration)  {
+    label := resource.DefaultConfigMapLabel
+
+    if len(*namespaceLabel) == 0  {
+        ls, err := createLabel("")
+        if nil != err {
+            log.Warningf("[INIT] Failed to create label selector: %v", err)
+        }
+
+        err = appMgr.AddNamespaceLabelInformer(ls, resyncPeriod)
+        if nil != err {
+            log.Warningf("[INIT] Failed to add label watch for all namespaces:%v", err)
+        }
+
+        ls, err = createLabel(label)
+        if nil != err {
+            log.Warningf("[INIT] Failed to create label selector: %v", err)
+        }
+
+        if watchAllNamespaces == true {
+            err = appMgr.AddNamespace("", ls, resyncPeriod)
+            if nil != err {
+                log.Warningf("[INIT] Failed to add informers for all namespaces:%v", err)
+            }
+        } else {
+            for _, namespace := range *namespaces {
+                err = appMgr.AddNamespace(namespace, ls, resyncPeriod)
+                if nil != err {
+                    log.Warningf("[INIT] Failed to add informers for namespace %v: %v", namespace, err)
+                } else {
+                    log.Debugf("[INIT] Added informers for namespace %v", namespace)
+                }
+            }
+        }
+
+    } else {
+        ls, err := createLabel(*namespaceLabel)
+        if nil != err {
+            log.Warningf("[INIT] Failed to create label selector: %v", err)
+        }
+        err = appMgr.AddNamespaceLabelInformer(ls, resyncPeriod)
+        if nil != err {
+            log.Warningf("[INIT] Failed to add label watch for all namespaces:%v", err)
+        }
+        appMgr.DynamicNS = true
+    }
 }
 
 func main() {
@@ -168,6 +243,12 @@ func main() {
 
     *logLevel = strings.ToUpper(*logLevel)
     initLogger(*logLevel)
+
+    if len(*namespaces) == 0 && len(*namespaceLabel) == 0 {
+        watchAllNamespaces = true
+    } else {
+        watchAllNamespaces = false
+    }
 
     log.Infof("[INIT] Starting: K8S CLIENT TEST")
 
@@ -198,13 +279,30 @@ func main() {
     log.Infof("[INIT] kubernetes version %s", appMgr.K8sVersion)
 
     intervalFactor := time.Duration(*nodePollInterval)
-    log.Infof("pollers NewNodePoller, nodePollInterval: %d, intervalFactor: %d", *nodePollInterval, intervalFactor)
+    log.Infof("Setup node poller, nodePollInterval: %d", *nodePollInterval)
     np := pollers.NewNodePoller(appMgrParms.KubeClient, intervalFactor*time.Second, *nodeLabelSelector)
     err = setupNodePolling(appMgr, np, eventChan, appMgrParms.KubeClient)
     if nil != err {
         log.Fatalf("Required polling utility for node updates failed setup: %v",err)
     }
 
+    np.Run()
+    defer np.Stop()
+
+    log.Infof("Setup watchers, syncInterval: %d", *syncInterval)
+    setupWatchers(appMgr, time.Duration(*syncInterval)*time.Second)
+
+    stopCh := make(chan struct{})
+
+    log.Infof("appMgr run")
+    appMgr.Run(stopCh)
+
+    log.Infof("signal process")
+    sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+    sig := <-sigs
+    close(stopCh) 
+    log.Infof("[INIT] Exiting - signal %v\n", sig)
     //fmt.Printf("%+v\n", appMgr)
 
 

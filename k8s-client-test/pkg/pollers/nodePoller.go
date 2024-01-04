@@ -58,23 +58,22 @@ func NewNodePoller(
 }
 
 func (np *nodePoller) Run() error {
-        np.runningLock.Lock()
-        defer np.runningLock.Unlock()
+    np.runningLock.Lock()
+    defer np.runningLock.Unlock()
 
-        if false == np.running {
-                np.running = true
-                go np.poller()
-                for _, pl := range np.regListeners {
-                        log.Debugf("[CORE] NodePoller (%p) registering cached listener: %p\n",
-                                np, pl)
-                        np.runListener(pl)
-                }
-        } else {
-                return fmt.Errorf("NodePoller Run method called while running")
+    if false == np.running {
+        np.running = true
+        go np.poller()
+        for _, pl := range np.regListeners {
+            log.Debugf("[CORE] NodePoller (%p) registering cached listener: %p", np, pl)
+            np.runListener(pl)
         }
+    } else {
+        return fmt.Errorf("NodePoller Run method called while running")
+    }
 
-        log.Infof("[CORE] NodePoller started: (%p)", np)
-        return nil
+    log.Infof("[CORE] NodePoller started: (%p)", np)
+    return nil
 }
 
 func (np *nodePoller) Stop() error {
@@ -93,20 +92,19 @@ func (np *nodePoller) Stop() error {
 }
 
 func (np *nodePoller) RegisterListener(p PollListener) error {
-        np.runningLock.Lock()
-        defer np.runningLock.Unlock()
+    np.runningLock.Lock()
+    defer np.runningLock.Unlock()
 
-        log.Infof("[CORE] NodePoller (%p) registering new listener: %p", np, p)
+    log.Infof("[CORE] NodePoller (%p) registering new listener: %p", np, p)
 
-        np.regListeners = append(np.regListeners, p)
-        if false == np.running {
-                log.Debugf("[CORE] NodePoller (%p) caching listener %p, poller is not running",
-                        np, p)
-                return nil
-        }
-
-        np.runListener(p)
+    np.regListeners = append(np.regListeners, p)
+    if false == np.running {
+        log.Debugf("[CORE] NodePoller (%p) caching listener %p, poller is not running", np, p)
         return nil
+    }
+
+    np.runListener(p)
+    return nil
 }
 
 func (np *nodePoller) runListener(p PollListener) {
@@ -197,16 +195,14 @@ func (np *nodePoller) poller() {
 
                         since := time.Since(loopTime)
                         remainingInterval = remainingInterval - since
-                        log.Debugf("[CORE] NodePoller (%p) listener add wake up - next poll in %v\n",
-                                np, remainingInterval)
+                        log.Debugf("[CORE] NodePoller (%p) listener add wake up - next poll in %v", np, remainingInterval)
                         if 0 > remainingInterval {
                                 remainingInterval = 0
                         }
 
                         listeners = append(listeners, pl)
                 case <-time.After(remainingInterval):
-                        log.Debugf("[CORE] NodePoller (%p) ready to poll, last wait: %v\n",
-                                np, remainingInterval)
+                        log.Debugf("[CORE] NodePoller (%p) ready to poll, last wait: %v", np, remainingInterval)
                         remainingInterval = np.pollInterval
                         doPoll = true
                 }
