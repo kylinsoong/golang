@@ -20,12 +20,14 @@ import (
     "k8s.io/client-go/util/workqueue"
     "k8s.io/client-go/tools/cache"
 
+    cisAgent "github.com/kylinsoong/k8s-client-test/pkg/agent"
     log "github.com/kylinsoong/k8s-client-test/pkg/vlogger"
     . "github.com/kylinsoong/k8s-client-test/pkg/resource"
 )
 
 type Manager struct {
     resources               *Resources
+    agentCfgMap             map[string]*AgentCfgMap
     kubeClient              kubernetes.Interface
     restClientv1            rest.Interface
     restClientv1beta1       rest.Interface
@@ -52,6 +54,7 @@ type Manager struct {
     eventNotifier           *EventNotifier
     nplStore                map[string]NPLAnnoations
     nplStoreMutex           sync.Mutex
+    AgentCIS                cisAgent.CISAgentInterface
     agRspChan               chan interface{}
     WatchedNS               WatchedNamespaces
     configMapLabel          string
@@ -147,6 +150,7 @@ func NewManager(params *Params) *Manager {
         manageIngress:          params.ManageIngress,
         manageConfigMaps:       params.ManageConfigMaps,
         agRspChan:              params.AgRspChan,
+        agentCfgMap:            make(map[string]*AgentCfgMap),
     }
 
     manager.processedResources = make(map[string]bool)
@@ -874,3 +878,221 @@ func (appMgr *Manager) syncNamespace(nsName string) error {
 
         return nil
 }
+
+func (appMgr *Manager) triggerSyncResources(ns string, inf *appInformer) {
+        enqueueSvcFromNamespace := func(namespace string, appInf *appInformer) {
+                objs, err := appInf.svcInformer.GetIndexer().ByIndex("namespace", namespace)
+                if err != nil {
+                        log.Errorf("[CORE] Unable to fetch services from namespace: %v for periodic resync", namespace)
+                        return
+                }
+                if objs != nil && len(objs) > 0 {
+                        svc := objs[0].(*v1.Service)
+                        svcKey := serviceQueueKey{
+                                Namespace:    namespace,
+                                ServiceName:  svc.Name,
+                                ResourceKind: Services,
+                                ResourceName: svc.Name,
+                                Operation:    OprTypeUpdate,
+                        }
+                        log.Debugf("[CORE] Periodic enqueue of Service from Namespace: %v, svc: %s", namespace, svc.Name)
+                        appMgr.vsQueue.Add(svcKey)
+                }
+        }
+
+        if appMgr.watchingAllNamespacesLocked() {
+                namespaces := appMgr.GetWatchedNamespacesLockless()
+
+                if len(namespaces) == 1 && namespaces[0] == "" {
+                        if appMgr.nsInformer == nil {
+                                return
+                        }
+                        nsps := appMgr.nsInformer.GetIndexer().List()
+                        namespaces = []string{}
+                        for _, ns := range nsps {
+                                namespaces = append(namespaces, ns.(*v1.Namespace).Name)
+                        }
+                }
+
+                for _, ns := range namespaces {
+                        if inf, ok := appMgr.getNamespaceInformerLocked(ns); ok {
+                                enqueueSvcFromNamespace(ns, inf)
+                        }
+                }
+        } else {
+                enqueueSvcFromNamespace(ns, inf)
+        }
+}
+
+func (appMgr *Manager) removeNamespaceLocked(namespace string) error {
+        if _, found := appMgr.appInformers[namespace]; !found {
+                return fmt.Errorf("No informers exist for namespace %v\n", namespace)
+        }
+        delete(appMgr.appInformers, namespace)
+        return nil
+}
+
+func (appMgr *Manager) GetWatchedNamespacesLockless() []string {
+        var namespaces []string
+        for k, _ := range appMgr.appInformers {
+                namespaces = append(namespaces, k)
+        }
+        return namespaces
+}
+
+
+func (appMgr *Manager) syncVirtualServer(sKey serviceQueueKey) error {
+
+    startTime := time.Now()
+    defer func() {
+        endTime := time.Now()
+                // processedItems with +1 because that is the actual number of items processed
+                // and it gets incremented just after this function returns
+         log.Debugf("[CORE] Finished syncing virtual servers %+v in namespace %+v (%v), %v/%v", sKey.ServiceName, sKey.Namespace, endTime.Sub(startTime), appMgr.processedItems+1, appMgr.queueLen)
+    }()
+        // Get the informers for the namespace. This will tell us if we care about
+        // this item.
+    appInf, haveNamespace := appMgr.getNamespaceInformer(sKey.Namespace)
+    if !haveNamespace {
+                // This shouldn't happen as the namespace is checked for every item before
+                // it is added to the queue, but issue a warning if it does.
+        log.Warningf("Received an update for an item from an un-watched namespace %v", sKey.Namespace)
+        return nil
+    }
+
+     // Lookup the service
+    svcKey := sKey.Namespace + "/" + sKey.ServiceName
+    obj, svcFound, err := appInf.svcInformer.GetIndexer().GetByKey(svcKey)
+    if nil != err {
+                // Returning non-nil err will re-queue this item with rate-limiting.
+        log.Warningf("[CORE] Error looking up service '%v': %v\n", svcKey, err)
+        return err
+    }
+
+    // Processing just one service from a namespace processes all the resources in that namespace
+    switch sKey.ResourceKind {
+    case Services:
+        rkey := Services + "_" + sKey.Namespace
+        if !appMgr.steadyState && sKey.Operation == OprTypeCreate {
+            if _, ok := appMgr.processedResources[rkey]; ok {
+                if !appMgr.steadyState && appMgr.processedItems >= appMgr.queueLen-1 {
+                    appMgr.deployResource()
+                    appMgr.steadyState = true
+                }
+                return nil
+            }
+            appMgr.processedResourcesMutex.Lock()
+            appMgr.processedResources[rkey] = true
+            appMgr.processedResourcesMutex.Unlock()
+        }
+    case Endpoints:
+        if appMgr.IsNodePort() {
+            return nil
+        }
+    case Configmaps:
+        resKey := prepareResourceKey(sKey.ResourceKind, sKey.Namespace, sKey.ResourceName)
+        switch sKey.Operation {
+        case OprTypeCreate:
+            if _, ok := appMgr.processedResources[resKey]; ok {
+                if !appMgr.steadyState && appMgr.processedItems >= appMgr.queueLen-1 {
+                    appMgr.deployResource()
+                    appMgr.steadyState = true
+                }
+                return nil
+            }
+        case OprTypeDelete:
+            appMgr.processedResourcesMutex.Lock()
+            delete(appMgr.processedResources, resKey)
+            appMgr.processedResourcesMutex.Unlock()
+        }
+    default:
+                // Resources other than Services will be tracked if they are processed earlier
+        resKey := prepareResourceKey(sKey.ResourceKind, sKey.Namespace, sKey.ResourceName)
+        switch sKey.Operation {
+                // If a resource is processed earlier and still sKey gives us CREATE event,
+                // then it was handled earlier when associated service processed
+                // otherwise just mark it as processed and continue
+        case OprTypeCreate:
+            if _, ok := appMgr.processedResources[resKey]; ok {
+                if !appMgr.steadyState && appMgr.processedItems >= appMgr.queueLen-1 {
+                    appMgr.deployResource()
+                    appMgr.steadyState = true
+                }
+                return nil
+            }
+            appMgr.processedResourcesMutex.Lock()
+            appMgr.processedResources[resKey] = true
+            appMgr.processedResourcesMutex.Unlock()
+        case OprTypeDelete:
+            appMgr.processedResourcesMutex.Lock()
+            delete(appMgr.processedResources, resKey)
+            appMgr.processedResourcesMutex.Unlock()
+        }
+
+    }
+
+    // Use a map to allow ports in the service to be looked up quickly while
+    // looping through the ConfigMaps. The value is not currently used.
+    svcPortMap := make(map[int32]bool)
+    var svc *v1.Service
+    if svcFound {
+        svc = obj.(*v1.Service)
+        for _, portSpec := range svc.Spec.Ports {
+            svcPortMap[portSpec.Port] = false
+        }
+    }
+
+    // rsMap stores all resources currently in Resources matching sKey, indexed by port.
+    // At the end of processing, rsMap should only contain configs we want to delete.
+    // If we have a valid config, then we remove it from rsMap.
+    rsMap := appMgr.getResourcesForKey(sKey)
+    dgMap := make(InternalDataGroupMap)
+
+    var stats vsSyncStats
+    appMgr.rsrcSSLCtxt = make(map[string]*v1.Secret)
+    if nil != appInf.ingInformer {
+        err = appMgr.syncIngresses(&stats, sKey, rsMap, svcPortMap, svc, appInf, dgMap)
+        if nil != err {
+            return err
+        }
+    }
+    if nil != appInf.cfgMapInformer {
+        err = appMgr.syncConfigMaps(&stats, sKey, rsMap, svcPortMap, svc, appInf)
+        if nil != err {
+            return err
+        }
+    }
+        // Update internal data groups if changed
+    appMgr.syncDataGroups(&stats, dgMap, sKey.Namespace)
+        // Delete IRules if necessary
+    appMgr.syncIRules()
+
+    if len(rsMap) > 0 {
+                // We get here when there are ports defined in the service that don't
+                // have a corresponding config map.
+        stats.vsDeleted += appMgr.deleteUnusedConfigs(sKey, rsMap)
+        stats.vsUpdated += appMgr.deleteUnusedResources(sKey, svcFound)
+
+    } else if !svcFound {
+        stats.vsUpdated += appMgr.deleteUnusedResources(sKey, svcFound)
+    }
+
+    log.Debugf("[CORE] Updated %v of %v virtual server configs, deleted %v", stats.vsUpdated, stats.vsFound, stats.vsDeleted)
+
+        // delete any custom profiles that are no longer referenced
+    appMgr.deleteUnusedProfiles(appInf, sKey.Namespace, &stats)
+
+    switch {
+    case stats.isStatsAvailable(),
+        !appMgr.steadyState && appMgr.processedItems >= appMgr.queueLen-1:
+                {
+                        if appMgr.processedItems >= appMgr.queueLen-1 || appMgr.steadyState {
+                                appMgr.deployResource()
+                                appMgr.steadyState = true
+                        }
+                }
+    }
+
+    return nil
+}
+
