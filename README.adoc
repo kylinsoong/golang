@@ -53,10 +53,11 @@ func main() {
 }
 ----
 
-=== Define a Standard Project
+== Work with Go standard project
+
+=== Project Structure
 
 [source, go]
-.*1. Project Architecture*
 ----
 # tree greetings/
 greetings/
@@ -69,22 +70,30 @@ greetings/
         └── greetings_test.go
 ----
 
+A standard Go project structure can vary depending on the size and nature of the project, but there are some common conventions that many Go developers follow:
+
+* *cmd*: The `cmd` directory is for the main applications of your project. Each application can have its own subdirectory. For example, myapp could be the main entry point for your application
+* *internal*: The `internal` directory is for packages that are only used within your project, not meant for external use.
+* *pkg*: The pkg directory contains libraries and packages that are meant to be used by other projects. Each package within pkg can have its own subdirectory.
+
+=== Init and Setup Dependencies
 
 [source, go]
-.*2. Init and Pull Dependencies*
 ----
 go mod init github.com/kylinsoong/golang/greetings
 go mod tidy
 ----
 
+=== Run
+
 [source, go]
-.*3. Run*
 ----
 go run cmd/greetings/main.go
 ----
 
+=== How main module call pkg module
+
 [source, go]
-.*4. How main.go all pkg module*
 ----
 package main
 
@@ -98,35 +107,23 @@ func main() {
 }
 ----
 
-[source, go]
-.*5. return and handle error*
-----
-
-func Hello(name string) (string, error) {
-
-    if name == "" {
-        return "", errors.New("empty name")
-    }
-
-    message := fmt.Sprintf("Hi, %v. Welcome!", name)
-    return message, nil
-}
-----
+=== Run Unit Test
 
 [source, go]
-.*6. Run Unit Test*
 ----
 go test ./pkg/greetings/ 
 ----
 
+=== Build
+
 [source, go]
-.*7. Build*
 ----
 go build -o a.out cmd/greetings/*.go
 ----
 
+=== Run Binary File
+
 [source, go]
-.*8. Run Binary File*
 ----
 # ./a.out
 ----
