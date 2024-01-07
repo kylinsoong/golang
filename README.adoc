@@ -5,12 +5,12 @@
 
 * https://golang.org/doc/
 
-=== 版本查看
+=== Check go version
 
 [source, go]
 ----
-$ go version
-go version go1.16.2 darwin/amd64
+# go version
+go version go1.21.5 linux/arm64
 ----
 
 === package, import, main
@@ -26,7 +26,7 @@ func main() {
 }
 ----
 
-=== 运行 main 方法
+=== Run main methods
 
 [source, go]
 ----
@@ -34,7 +34,7 @@ $ go run hello.go
 Hello, World!
 ----
 
-=== 调运外部方法
+=== Call External Methods
 
 [source, go]
 ----
@@ -53,408 +53,81 @@ func main() {
 }
 ----
 
-=== Define a External Module
+=== Define a Standard Project
 
 [source, go]
+.*1. Project Architecture*
 ----
-$ cat greetings/greetings.go 
-package greetings
-
-import "fmt"
-
-// Hello returns a greeting for the named person.
-func Hello(name string) string {
-    // Return a greeting that embeds the name in a message.
-    message := fmt.Sprintf("Hi, %v. Welcome!", name)
-    return message
-}
+# tree greetings/
+greetings/
+├── cmd
+│   └── greetings
+│       └── main.go
+└── pkg
+    └── greetings
+        ├── greetings.go
+        └── greetings_test.go
 ----
 
-=== Call a External Module
 
 [source, go]
+.*2. Init and Pull Dependencies*
 ----
-package main
-  
-import (
-    "fmt"
-    "rsc.io/quote"
-    "cloudadc.github.io/greetings"
-)
-
-func main() {
-    fmt.Println("Hello, World!")
-
-    fmt.Println(quote.Glass())
-    fmt.Println(quote.Go())
-    fmt.Println(quote.Hello())
-    fmt.Println(quote.Opt())
-
-    message := greetings.Hello("Kylin")
-    fmt.Println(message)
-}
-----
-
-NOTE: `cloudadc.github.io/greetings` is external module, finish the below `依赖配置` can run `hello.go` to call external `greetings.go`.
-
-=== 依赖配置
-
-[source, go]
-.*1. initi module greetings*
-----
-cd ../greetings/ && go mod init cloudadc.github.io/greetings
-----
-
-[source, go]
-.*2. init module hello*
-----
-cd ../hello/ && go mod init cloudadc.github.io/hello
-----
-
-[source, go]
-.*3. update module to replace external module*
-----
-go mod edit -replace=cloudadc.github.io/greetings=../greetings
-----
-
-[source, go]
-.*4. add module requirements and sums*
-----
+go mod init github.com/kylinsoong/golang/greetings
 go mod tidy
 ----
 
 [source, go]
-.*5. run*
+.*3. Run*
 ----
-go run hello.go 
+go run cmd/greetings/main.go
 ----
-
-=== Return and handle an error
 
 [source, go]
-----
-package greetings
-  
-import (
-    "errors"
-    "fmt"
-)
-
-func Hello(name string) (string, error) {
-
-    if name == "" {
-        return "", errors.New("empty name")
-    }
-
-    message := fmt.Sprintf("Hi, %v. Welcome!", name)
-    return message, nil
-}
-----
-
-TEST THE ERROR HANFLING：
-
-[source, go]
-----
-$ go run hello-err.go 
-cloudadc.github.io/greetings init
-Great to see you, Kylin! <nil>
- empty name
-----
-
-=== Return a random greeting
-
-[source, go]
-----
-package greetings
-  
-import (
-    "errors"
-    "fmt"
-    "math/rand"
-    "time"
-)
-
-func Hello(name string) (string, error) {
-
-    if name == "" {
-        return "", errors.New("empty name")
-    }
-
-    message := fmt.Sprintf(randomFormat(), name)
-    return message, nil
-}
-
-func init() {
-    fmt.Println("cloudadc.github.io/greetings init");
-    rand.Seed(time.Now().UnixNano())
-}
-
-func randomFormat() string {
-
-    formats := []string{
-        "Hi, %v. Welcome!",
-        "Great to see you, %v!",
-        "Hail, %v! Well met!",
-    }
-
-    return formats[rand.Intn(len(formats))]
-}
-----
-
-=== 添加参数为数组的方法
-
-[source, go]
-----
-package greetings
-  
-import (
-    "errors"
-    "fmt"
-    "math/rand"
-    "time"
-)
-
-func Hello(name string) (string, error) {
-
-    if name == "" {
-        return "", errors.New("empty name")
-    }
-
-    message := fmt.Sprintf(randomFormat(), name)
-    return message, nil
-}
-
-func Hellos(names []string) (map[string]string, error) {
-
-    messages := make(map[string]string)
-    for _, name := range names {
-        message, err := Hello(name)
-        if err != nil {
-            return nil, err
-        }
-        messages[name] = message
-    }
-
-    return messages, nil
-}
-
-func init() {
-    fmt.Println("cloudadc.github.io/greetings init");
-    rand.Seed(time.Now().UnixNano())
-}
-
-func randomFormat() string {
-
-    formats := []string{
-        "Hi, %v. Welcome!",
-        "Great to see you, %v!",
-        "Hail, %v! Well met!",
-    }
-
-    return formats[rand.Intn(len(formats))]
-}
-----
-
-=== Main 方法
-
-[source, go]
+.*4. How main.go all pkg module*
 ----
 package main
-  
-import (
-    "fmt"
-    "log"
 
-    "rsc.io/quote"
-    "cloudadc.github.io/greetings"
+import (
+    "github.com/kylinsoong/golang/greetings/pkg/greetings"
 )
 
 func main() {
-    fmt.Println("Hello, World!")
-
-    fmt.Println(quote.Glass())
-    fmt.Println(quote.Go())
-    fmt.Println(quote.Hello())
-    fmt.Println(quote.Opt())
-
-    log.SetPrefix("greetings: ")
-    log.SetFlags(0)
-
     names := []string{"Gladys", "Samantha", "Darrin", "Kylin"}
     messages, err := greetings.Hellos(names)
-    if err != nil {
-        log.Fatal(err)
+}
+----
+
+[source, go]
+.*5. return and handle error*
+----
+
+func Hello(name string) (string, error) {
+
+    if name == "" {
+        return "", errors.New("empty name")
     }
 
-    fmt.Println(messages)
-
+    message := fmt.Sprintf("Hi, %v. Welcome!", name)
+    return message, nil
 }
 ----
 
-=== 运行 Main 方法
-
 [source, go]
+.*6. Run Unit Test*
 ----
-$ go run hello.go 
-cloudadc.github.io/greetings init
-Hello, World!
-I can eat glass and it doesn't hurt me.
-Don't communicate by sharing memory, share memory by communicating.
-Hello, world.
-If a program is too slow, it must have a loop.
-map[Darrin:Great to see you, Darrin! Gladys:Hail, Gladys! Well met! Kylin:Hail, Kylin! Well met! Samantha:Hail, Samantha! Well met!]
-----
-
-=== 单元测试用例
-
-[source, go]
-----
-package greetings
-  
-import (
-    "testing"
-    "regexp"
-)
-
-func TestHelloName(t *testing.T) {
-    name := "Gladys"
-    want := regexp.MustCompile(`\b`+name+`\b`)
-    msg, err := Hello("Gladys")
-    if !want.MatchString(msg) || err != nil {
-        t.Fatalf(`Hello("Gladys") = %q, %v, want match for %#q, nil`, msg, err, want)
-    }
-}
-
-func TestHelloEmpty(t *testing.T) {
-    msg, err := Hello("")
-    if msg != "" || err == nil {
-        t.Fatalf(`Hello("") = %q, %v, want "", error`, msg, err)
-    }
-}
-----
-
-=== 运行单元测试
-
-[source, go]
-----
-$ go test -v
-cloudadc.github.io/greetings init
-=== RUN   TestHelloName
---- PASS: TestHelloName (0.00s)
-=== RUN   TestHelloEmpty
---- PASS: TestHelloEmpty (0.00s)
-PASS
-ok  	cloudadc.github.io/greetings	0.654s
-----
-
-=== 编译
-
-[source, go]
-----
-go build
-----
-
-NOTE: 一个module下只有允许有一个 Main 方法。
-
-=== 运行可执行文件
-
-[source, go]
-----
-$ ./hello 
-cloudadc.github.io/greetings init
-Hello, World!
-I can eat glass and it doesn't hurt me.
-Don't communicate by sharing memory, share memory by communicating.
-Hello, world.
-If a program is too slow, it must have a loop.
-map[Darrin:Hail, Darrin! Well met! Gladys:Hi, Gladys. Welcome! Kylin:Hail, Kylin! Well met! Samantha:Great to see you, Samantha!]
-----
-
-== Syntax
-
-[cols="2,5a"]
-|===
-|Name|Syntax
-
-|main
-|
-
-[source, go]
-----
-func main() {
-
-}
-----
-
-|System Module
-|
-* "fmt"
-* "log"
-* "errors"
-* "math/rand"
-* "time"
-
-|package
-|
-[source, go]
-----
-package main
-----
-
-|method
-|
-[source, go]
-----
-func FUNC_NAME(PARAMETER TYPE)(RETURN, ERROR)
-----
-
-* Public method start with Upper word
-* Provate methos start wuth Lower word
-
-|import
-|Separate System Module and external/customized module
-
-[source, go]
-----
-import (
-    "fmt"
-    "log"
-
-    "rsc.io/quote"
-    "cloudadc.github.io/greetings"
-)
-----
-
-|Basic Dev Commands
-|
-[source, go]
-.*init*
-----
-go mod init cloudadc.github.io/hello
+go test ./pkg/greetings/ 
 ----
 
 [source, go]
-.*tidy*
+.*7. Build*
 ----
-go mod tidy
-----
-
-[source, go]
-.*replace(reference local module)*
-----
-go mod edit -replace=cloudadc.github.io/greetings=../greetings
+go build -o a.out cmd/greetings/*.go
 ----
 
 [source, go]
-.*test*
+.*8. Run Binary File*
 ----
-go test -v
+# ./a.out
 ----
-
-[source, go]
-.*build*
-----
-go build
-----
-|===
 

@@ -5,7 +5,7 @@ import (
     "log"
 
     "rsc.io/quote"
-    "cloudadc.github.io/greetings"
+    "github.com/kylinsoong/golang/greetings/pkg/greetings"
 )
 
 func main() {
@@ -28,3 +28,4 @@ func main() {
     fmt.Println(messages)
 
 }
+

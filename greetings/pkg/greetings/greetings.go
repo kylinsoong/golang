@@ -32,7 +32,7 @@ func Hellos(names []string) (map[string]string, error) {
 }
 
 func init() {
-    fmt.Println("cloudadc.github.io/greetings init");
+    fmt.Println("init");
     rand.Seed(time.Now().UnixNano())
 }
 
