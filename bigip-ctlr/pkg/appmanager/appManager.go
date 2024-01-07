@@ -21,9 +21,9 @@ import (
     "k8s.io/client-go/util/workqueue"
     "k8s.io/client-go/tools/cache"
 
-    cisAgent "github.com/kylinsoong/k8s-client-test/pkg/agent"
-    log "github.com/kylinsoong/k8s-client-test/pkg/vlogger"
-    . "github.com/kylinsoong/k8s-client-test/pkg/resource"
+    cisAgent "github.com/kylinsoong/bigip-ctlr/pkg/agent"
+    log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
+    . "github.com/kylinsoong/bigip-ctlr/pkg/resource"
 )
 
 type ResourceMap map[int32][]*ResourceConfig

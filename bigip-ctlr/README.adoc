@@ -1,0 +1,8 @@
+= How to run
+
+[source, bash]
+----
+go mod init github.com/kylinsoong/bigip-ctlr
+go mod tidy
+go run cmd/bigip-ctlr/*.go --running-in-cluster=false --kubeconfig=/root/.kube/config --namespace=f5-hub-1 --namespace=f5-hub-2 --node-poll-interval=60 --periodic-sync-interval=60 --hubmode=true --manage-ingress=false --manage-configmaps=true
+----

@@ -506,3 +506,5 @@ const OprTypeDelete = "delete"
 const CISControllerName = "f5.com/cntr-ingress-svcs"
 const DefaultIngressClass = "ingressclass.kubernetes.io/is-default-class"
 const NodePortLocal = "nodeportlocal"
+
+//const DefaultSslServerCAName = "openshift_route_cluster_default-ca"

@@ -1,3 +1,19 @@
+/*-
+ * Copyright (c) 2016-2021, F5 Networks, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package resource
 
 import (
@@ -15,8 +31,10 @@ import (
 
 	netv1 "k8s.io/api/networking/v1"
 
-        log "github.com/kylinsoong/k8s-client-test/pkg/vlogger"
+	bigIPPrometheus "github.com/kylinsoong/bigip-ctlr/pkg/prometheus"
+	log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
 
+	routeapi "github.com/openshift/api/route/v1"
 	"github.com/xeipuuv/gojsonschema"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -223,14 +241,66 @@ func FormatIngressPoolName(namespace, svc string) string {
 	return fmt.Sprintf("ingress_%s_%s", namespace, svc)
 }
 
+func GetRouteCanonicalServiceName(route *routeapi.Route) string {
+	return route.Spec.To.Name
+}
 
 type RouteService struct {
 	Weight int
 	Name   string
 }
 
+// return the services associated with a route (names + weight)
+func GetRouteServices(route *routeapi.Route) []RouteService {
+	numOfSvcs := 1
+	if route.Spec.AlternateBackends != nil {
+		numOfSvcs += len(route.Spec.AlternateBackends)
+	}
+	svcs := make([]RouteService, numOfSvcs)
 
+	svcIndex := 0
+	if route.Spec.AlternateBackends != nil {
+		for _, svc := range route.Spec.AlternateBackends {
+			svcs[svcIndex].Name = svc.Name
+			svcs[svcIndex].Weight = int(*(svc.Weight))
+			svcIndex = svcIndex + 1
+		}
+	}
+	svcs[svcIndex].Name = route.Spec.To.Name
+	if route.Spec.To.Weight != nil {
+		svcs[svcIndex].Weight = int(*(route.Spec.To.Weight))
+	} else {
+		// Older versions of openshift do not have a weight field
+		// so we will basically ignore it.
+		svcs[svcIndex].Weight = 0
+	}
 
+	return svcs
+}
+
+// return the service names associated with a route
+func GetRouteAssociatedRuleNames(route *routeapi.Route) []string {
+	var ruleNames []string
+	ruleName := FormatRouteRuleName(route)
+	ruleNames = append(ruleNames, ruleName)
+	// Add whitelist or allow source rules
+	if _, ok := route.ObjectMeta.Annotations[F5VsWhitelistSourceRangeAnnotation]; ok {
+		ruleNames = append(ruleNames, ruleName+"-reset")
+	} else if _, ok := route.ObjectMeta.Annotations[F5VsAllowSourceRangeAnnotation]; ok {
+		ruleNames = append(ruleNames, ruleName+"-reset")
+	}
+	return ruleNames
+}
+
+// return the service names associated with a route
+func GetRouteServiceNames(route *routeapi.Route) []string {
+	svcs := GetRouteServices(route)
+	svcNames := make([]string, len(svcs))
+	for idx, svc := range svcs {
+		svcNames[idx] = svc.Name
+	}
+	return svcNames
+}
 
 // Deletes a whitelist reset rule
 func (rsCfg *ResourceConfig) DeleteWhitelistCondition() {
@@ -246,14 +316,42 @@ func (rsCfg *ResourceConfig) DeleteWhitelistCondition() {
 	}
 }
 
+// Verify if the service is associated with the route
+func ExistsRouteServiceName(route *routeapi.Route, expSvcName string) bool {
+	// We don't expect an extensive list, so we're not using a map
+	svcs := GetRouteServices(route)
+	for _, svc := range svcs {
+		if expSvcName == svc.Name {
+			return true
+		}
+	}
+	return false
+}
 
+// Verify if the service is associated with the route as AlternateBackend
+func IsABServiceOfRoute(route *routeapi.Route, expSvcName string) bool {
+	for _, svc := range route.Spec.AlternateBackends {
+		if expSvcName == svc.Name {
+			return true
+		}
+	}
+	return false
+}
 
+func IsRouteABDeployment(route *routeapi.Route) bool {
+	return route.Spec.AlternateBackends != nil && len(route.Spec.AlternateBackends) > 0
+}
 
 // format the pool name for a Route
 func FormatRoutePoolName(namespace, svcName string) string {
 	return fmt.Sprintf("openshift_%s_%s", namespace, svcName)
 }
 
+// format the Rule name for a Route
+func FormatRouteRuleName(route *routeapi.Route) string {
+	return fmt.Sprintf("openshift_route_%s_%s", route.ObjectMeta.Namespace,
+		route.ObjectMeta.Name)
+}
 
 // format the client ssl profile name for a Route
 func MakeRouteClientSSLProfileRef(partition, namespace, name string) ProfileRef {
@@ -400,6 +498,59 @@ func NewObjectDependencies(
 	var key ObjectDependency
 	deps := make(ObjectDependencies)
 	switch t := obj.(type) {
+	case *routeapi.Route:
+		route := obj.(*routeapi.Route)
+		key.Kind = "Route"
+		key.Namespace = route.ObjectMeta.Namespace
+		key.Name = route.ObjectMeta.Name
+		dep := ObjectDependency{
+			Kind:      route.Spec.To.Kind,
+			Namespace: route.ObjectMeta.Namespace,
+			Name:      route.Spec.To.Name,
+		}
+		deps[dep] = 1
+		for _, backend := range route.Spec.AlternateBackends {
+			dep.Kind = backend.Kind
+			dep.Name = backend.Name
+			deps[dep]++
+		}
+		dep = ObjectDependency{
+			Kind:      RuleDep,
+			Namespace: route.ObjectMeta.Namespace,
+			Name:      route.Spec.Host + route.Spec.Path,
+		}
+		deps[dep]++
+		if urlRewrite, ok := route.ObjectMeta.Annotations[F5VsURLRewriteAnnotation]; ok {
+			dep = ObjectDependency{
+				Kind:      URLDep,
+				Namespace: route.ObjectMeta.Namespace,
+				Name:      getAnnotationRuleNames(urlRewrite, false, route),
+			}
+			deps[dep]++
+		}
+		if appRoot, ok := route.ObjectMeta.Annotations[F5VsAppRootAnnotation]; ok {
+			dep = ObjectDependency{
+				Kind:      AppRootDep,
+				Namespace: route.ObjectMeta.Namespace,
+				Name:      getAnnotationRuleNames(appRoot, true, route),
+			}
+			deps[dep]++
+		}
+		if whiteList, ok := route.ObjectMeta.Annotations[F5VsWhitelistSourceRangeAnnotation]; ok {
+			dep = ObjectDependency{
+				Kind:      WhitelistDep,
+				Namespace: route.ObjectMeta.Namespace,
+				Name:      whiteList,
+			}
+			deps[dep]++
+		} else if whiteList, ok := route.ObjectMeta.Annotations[F5VsAllowSourceRangeAnnotation]; ok {
+			dep = ObjectDependency{
+				Kind:      WhitelistDep,
+				Namespace: route.ObjectMeta.Namespace,
+				Name:      whiteList,
+			}
+			deps[dep]++
+		}
 	// TODO remove the case once v1beta1.Ingress is deprecated in k8s 1.22
 	case *v1beta1.Ingress:
 		ingress := obj.(*v1beta1.Ingress)
@@ -600,6 +751,17 @@ func generateMultiServiceAnnotationV1RuleNames(ing *netv1.Ingress, annotationMap
 func getAnnotationRuleNames(oldName string, isAppRoot bool, obj interface{}) string {
 	var ruleNames string
 	switch t := obj.(type) {
+	case *routeapi.Route:
+		route := obj.(*routeapi.Route)
+		annotationMap := ParseAppRootURLRewriteAnnotations(oldName)
+		nameEnd := route.Spec.Host + route.Spec.Path + "-" + annotationMap["single"]
+		nameEnd = strings.Replace(nameEnd, "/", "_", -1)
+		if isAppRoot {
+			ruleNames = appRootRedirectRulePrefix + nameEnd
+			ruleNames += "," + appRootForwardRulePrefix + nameEnd
+		} else {
+			ruleNames = urlRewriteRulePrefix + nameEnd
+		}
 	// TODO remove the case once v1beta1.Ingress is deprecated in k8s 1.22
 	case *v1beta1.Ingress:
 		ingress := obj.(*v1beta1.Ingress)
@@ -830,6 +992,10 @@ func (rs *Resources) deleteImpl(
 	rsName string,
 	svcKey ServiceKey,
 ) {
+	bigIPPrometheus.MonitoredServices.DeleteLabelValues(svcKey.Namespace, svcKey.ServiceName, "parse-error")
+	bigIPPrometheus.MonitoredServices.DeleteLabelValues(svcKey.Namespace, rsName, "port-not-found")
+	bigIPPrometheus.MonitoredServices.DeleteLabelValues(svcKey.Namespace, rsName, "service-not-found")
+	bigIPPrometheus.MonitoredServices.DeleteLabelValues(svcKey.Namespace, rsName, "success")
 
 	// Remove mapping for a backend -> virtual/iapp
 	delete(rsList, rsName)
