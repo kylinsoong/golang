@@ -18,9 +18,11 @@ import (
     "github.com/spf13/pflag"
     "golang.org/x/crypto/ssh/terminal"
 
+    "github.com/kylinsoong/bigip-ctlr/pkg/teem"
     "github.com/kylinsoong/bigip-ctlr/pkg/appmanager"
     "github.com/kylinsoong/bigip-ctlr/pkg/pollers"
     "github.com/kylinsoong/bigip-ctlr/pkg/resource"
+    cisAgent "github.com/kylinsoong/bigip-ctlr/pkg/agent"
     log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
     clog "github.com/kylinsoong/bigip-ctlr/pkg/vlogger/console"
 )
@@ -30,13 +32,18 @@ const (
 )
 
 var (
+    version          string
+    buildInfo        string
+
     flags            *pflag.FlagSet
     globalFlags      *pflag.FlagSet
+    bigIPFlags       *pflag.FlagSet
     kubeFlags        *pflag.FlagSet
 
     logLevel         *string
     nodePollInterval *int
     syncInterval     *int
+    printVersion     *bool
 
     namespaceLabel         *string
     namespaces             *[]string
@@ -50,6 +57,11 @@ var (
     nodeLabelSelector      *string
     watchAllNamespaces     bool
     isNodePort             bool
+    bigIPPartitions        *[]string
+    agent                  *string
+    logAS3Response         *bool
+    filterTenants          *bool   
+    sslInsecure            *bool 
 
     kubeClient         kubernetes.Interface
     agRspChan          chan interface{}
@@ -60,6 +72,7 @@ var (
 func _init() {
     flags = pflag.NewFlagSet("main", pflag.PanicOnError)
     globalFlags = pflag.NewFlagSet("Global", pflag.PanicOnError)
+    bigIPFlags = pflag.NewFlagSet("BigIP", pflag.PanicOnError)
     kubeFlags = pflag.NewFlagSet("Kubernetes", pflag.PanicOnError)
 
     var err error
@@ -75,9 +88,17 @@ func _init() {
     logLevel = globalFlags.String("log-level", "DEBUG", "Optional, logging level")
     nodePollInterval = globalFlags.Int("node-poll-interval", 30, "Optional, interval (in seconds) at which to poll for cluster nodes.")
     syncInterval = globalFlags.Int("periodic-sync-interval", 30, "Optional, interval (in seconds) at which to queue resources.")
-
+    printVersion = globalFlags.Bool("version", false, "Optional, print version and exit.")
     globalFlags.Usage = func() {
         fmt.Fprintf(os.Stderr, "  Global:\n%s\n", globalFlags.FlagUsagesWrapped(width))
+    }
+
+    sslInsecure = bigIPFlags.Bool("insecure", false, "Optional, when set to true, enable insecure SSL communication to BIGIP.")
+    bigIPPartitions = bigIPFlags.StringArray("bigip-partition", []string{}, "Required, partition(s) for the Big-IP kubernetes objects.")
+    agent = bigIPFlags.String("agent", "as3", "Optional, when set to cccl, orchestration agent will be CCCL instead of AS3")
+    logAS3Response = bigIPFlags.Bool("log-as3-response", false, "Optional, when set to true, add the body of AS3 API response in Controller logs.")
+    bigIPFlags.Usage = func() {
+        fmt.Fprintf(os.Stderr, "  BigIP:\n%s\n", bigIPFlags.FlagUsagesWrapped(width))
     }
 
     namespaceLabel = kubeFlags.String("namespace-label", "", "Optional, used to watch for namespaces with this label")
@@ -92,17 +113,20 @@ func _init() {
     manageConfigMaps = kubeFlags.Bool("manage-configmaps", true, "Optional, specify whether or not to manage ConfigMap resources")
     hubMode = kubeFlags.Bool("hubmode", false, "Optional, specify whether or not to manage ConfigMap resources in hub-mode")
     nodeLabelSelector = kubeFlags.String("node-label-selector", "", "Optional, used to watch only for nodes with this label")
+    filterTenants = kubeFlags.Bool("filter-tenants", false, "Optional, specify whether or not to use tenant filtering API for AS3 declaration")
 
     kubeFlags.Usage = func() {
         fmt.Fprintf(os.Stderr, "  Kubernetes:\n%s\n", kubeFlags.FlagUsagesWrapped(width))
     }
 
     flags.AddFlagSet(globalFlags)
+    flags.AddFlagSet(bigIPFlags)
     flags.AddFlagSet(kubeFlags)
 
     flags.Usage = func() {
         fmt.Fprintf(os.Stderr, "Usage of %s\n", os.Args[0])
             globalFlags.Usage()
+            bigIPFlags.Usage()
             kubeFlags.Usage()
     }
 }
@@ -243,11 +267,31 @@ func setupWatchers(appMgr *appmanager.Manager, resyncPeriod time.Duration)  {
     }
 }
 
+func getUserAgentInfo() string {
+    var versionInfo map[string]string
+    var err error
+    var vInfo []byte
+    rc := kubeClient.Discovery().RESTClient()
+    if vInfo, err = rc.Get().AbsPath(versionPathk8s).DoRaw(context.TODO()); err == nil {
+                // support k8s
+        if er := json.Unmarshal(vInfo, &versionInfo); er == nil {
+            return fmt.Sprintf("CIS/v%v K8S/%v", version, versionInfo["gitVersion"])
+        }
+    }
+    log.Warningf("Unable to fetch user agent details. %v", err)
+    return fmt.Sprintf("CIS/v%v", version)
+}
+
 func main() {
 
     err := flags.Parse(os.Args)
     if nil != err {
         os.Exit(1)
+    }
+
+    if *printVersion {
+        fmt.Printf("Version: %s\nBuild: %s\n", version, buildInfo)
+        os.Exit(0)
     }
 
     *logLevel = strings.ToUpper(*logLevel)
@@ -276,6 +320,29 @@ func main() {
         os.Exit(1)
     }
 
+    td := &teem.TeemsData{
+        CisVersion:      version,
+        Agent:           *agent,
+        PoolMemberType:  *poolMemberType,
+        PlatformInfo:    getUserAgentInfo(),
+        DateOfCISDeploy: time.Now().UTC().Format(time.RFC3339Nano),
+        AccessEnabled:   true, 
+        ResourceType: teem.ResourceTypes{
+            Ingresses:       make(map[string]int),
+            Routes:          make(map[string]int),
+            Configmaps:      make(map[string]int),
+            VirtualServer:   make(map[string]int),
+            TransportServer: make(map[string]int),
+            ExternalDNS:     make(map[string]int),
+            IngressLink:     make(map[string]int),
+            IPAMVS:          make(map[string]int),
+            IPAMTS:          make(map[string]int),
+            IPAMSvcLB:       make(map[string]int),
+            NativeRoutes:    make(map[string]int),
+            RouteGroups:     make(map[string]int),
+        },
+    }
+
     agRspChan = make(chan interface{}, 1)
     var appMgrParms = getAppManagerParams()
 
@@ -285,6 +352,14 @@ func main() {
 
     GetNamespaces(appMgr)
 
+    log.Infof("[INIT] Creating Agent for %v", *agent)
+    appMgr.AgentCIS, err = cisAgent.CreateAgent(*agent)
+    if err != nil {
+        log.Fatalf("[INIT] unable to create agent %v error: err: %+v\n", *agent, err)
+        os.Exit(1)
+    }
+
+    appMgr.TeemData = td
     appMgr.K8sVersion = getk8sVersion()
 
     log.Infof("[INIT] kubernetes version %s", appMgr.K8sVersion)
@@ -318,3 +393,4 @@ func main() {
 
 
 }
+
