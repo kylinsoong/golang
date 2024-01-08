@@ -213,16 +213,14 @@ func (np *nodePoller) poller() {
 
 			since := time.Since(loopTime)
 			remainingInterval = remainingInterval - since
-			log.Debugf("[CORE] NodePoller (%p) listener add wake up - next poll in %v\n",
-				np, remainingInterval)
+			log.Debugf("[CORE] NodePoller (%p) listener add wake up - next poll in %v", np, remainingInterval)
 			if 0 > remainingInterval {
 				remainingInterval = 0
 			}
 
 			listeners = append(listeners, pl)
 		case <-time.After(remainingInterval):
-			log.Debugf("[CORE] NodePoller (%p) ready to poll, last wait: %v\n",
-				np, remainingInterval)
+			log.Debugf("[CORE] NodePoller (%p) ready to poll, last wait: %v", np, remainingInterval)
 			remainingInterval = np.pollInterval
 			doPoll = true
 		}

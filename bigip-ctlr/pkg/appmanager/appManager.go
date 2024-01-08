@@ -445,6 +445,7 @@ func (appMgr *Manager) enqueueNamespace(obj interface{}) {
 }
 
 func (appMgr *Manager) namespaceWorker() {
+	log.Infof("---> namespaceWorker")
 	for appMgr.processNextNamespace() {
 	}
 }
@@ -456,6 +457,7 @@ func (appMgr *Manager) processNextNamespace() bool {
 	}
 	defer appMgr.nsQueue.Done(key)
 
+	log.Infof("---> processNextNamespace, %v", key)
 	err := appMgr.syncNamespace(key.(string))
 	if err == nil {
 		appMgr.nsQueue.Forget(key)
@@ -514,12 +516,12 @@ func (appMgr *Manager) triggerSyncResources(ns string, inf *appInformer) {
 }
 
 func (appMgr *Manager) syncNamespace(nsName string) error {
+	log.Infof("---> syncing namespce %v start", nsName)
 	startTime := time.Now()
 	var err error
 	defer func() {
 		endTime := time.Now()
-		log.Debugf("[CORE] Finished syncing namespace %+v (%v)",
-			nsName, endTime.Sub(startTime))
+		log.Debugf("[CORE] Finished syncing namespace %+v (%v)", nsName, endTime.Sub(startTime))
 	}()
 	_, exists, err := appMgr.nsInformer.GetIndexer().GetByKey(nsName)
 	if nil != err {
@@ -886,7 +888,7 @@ func (appMgr *Manager) enqueueConfigMap(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 }
@@ -896,7 +898,7 @@ func (appMgr *Manager) enqueueService(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 }
@@ -906,7 +908,7 @@ func (appMgr *Manager) enqueueEndpoints(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 }
@@ -916,7 +918,7 @@ func (appMgr *Manager) enqueuePod(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 }
@@ -926,7 +928,7 @@ func (appMgr *Manager) enqueueSecrets(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 
@@ -937,7 +939,7 @@ func (appMgr *Manager) enqueueIngress(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 }
@@ -950,7 +952,7 @@ func (appMgr *Manager) enqueueRoute(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", key)
+			log.Infof("[CORE] Add %v to queue", *key)
 		}
 	}
 }
@@ -1058,11 +1060,13 @@ func (appMgr *Manager) Run(stopCh <-chan struct{}) {
 }
 
 func (appMgr *Manager) runImpl(stopCh <-chan struct{}) {
+	log.Infof("---> appMgr runImpl")
 	defer utilruntime.HandleCrash()
 	defer appMgr.vsQueue.ShutDown()
 	defer appMgr.nsQueue.ShutDown()
 
 	if nil != appMgr.nsInformer {
+		log.Infof("---> appMgr startAndSyncNamespaceInformer")
 		// Using one worker for namespace label changes.
 		appMgr.startAndSyncNamespaceInformer(stopCh)
 		go wait.Until(appMgr.namespaceWorker, time.Second, stopCh)
@@ -1094,9 +1098,11 @@ func (appMgr *Manager) startAndSyncAppInformers() {
 func (appMgr *Manager) startAppInformersLocked() {
 	for _, appInf := range appMgr.appInformers {
 		appInf.start()
+		log.Infof("---> appMgr start app informer %v", appInf)
 	}
 	if nil != appMgr.as3Informer {
 		appMgr.as3Informer.start()
+		log.Infof("---> appMgr start as3 infomer %v", appMgr.as3Informer)
 	}
 }
 
@@ -1127,6 +1133,7 @@ func (appMgr *Manager) stopAppInformers() {
 }
 
 func (appMgr *Manager) virtualServerWorker() {
+	log.Infof("---> virtualServerWorker")
 	for appMgr.processNextVirtualServer() {
 	}
 }
@@ -1251,6 +1258,7 @@ func (appMgr *Manager) processNextVirtualServer() bool {
 		return true
 	}
 
+	log.Infof("---> processNextVirtualServer, %v", skey)
 	err := appMgr.syncVirtualServer(skey)
 	if err == nil {
 		if !appMgr.steadyState {
@@ -1289,13 +1297,13 @@ type vsSyncStats struct {
 }
 
 func (appMgr *Manager) syncVirtualServer(sKey serviceQueueKey) error {
+	log.Infof("---> syncing virtual server %v start", sKey)
 	startTime := time.Now()
 	defer func() {
 		endTime := time.Now()
 		// processedItems with +1 because that is the actual number of items processed
 		// and it gets incremented just after this function returns
-		log.Debugf("[CORE] Finished syncing virtual servers %+v in namespace %+v (%v), %v/%v",
-			sKey.ServiceName, sKey.Namespace, endTime.Sub(startTime), appMgr.processedItems+1, appMgr.queueLen)
+		log.Debugf("[CORE] Finished syncing virtual servers %+v in namespace %+v (%v), %v/%v", sKey.ServiceName, sKey.Namespace, endTime.Sub(startTime), appMgr.processedItems+1, appMgr.queueLen)
 	}()
 	// Get the informers for the namespace. This will tell us if we care about
 	// this item.

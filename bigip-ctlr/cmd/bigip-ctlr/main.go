@@ -290,7 +290,7 @@ func main() {
     log.Infof("[INIT] kubernetes version %s", appMgr.K8sVersion)
 
     intervalFactor := time.Duration(*nodePollInterval)
-    log.Infof("Setup node poller, nodePollInterval: %d", *nodePollInterval)
+    log.Infof("---> Setup node poller, nodePollInterval: %d", *nodePollInterval)
     np := pollers.NewNodePoller(appMgrParms.KubeClient, intervalFactor*time.Second, *nodeLabelSelector)
     err = setupNodePolling(appMgr, np, eventChan, appMgrParms.KubeClient)
     if nil != err {
@@ -300,15 +300,15 @@ func main() {
     np.Run()
     defer np.Stop()
 
-    log.Infof("Setup watchers, syncInterval: %d", *syncInterval)
+    log.Infof("---> Setup watchers, syncInterval: %d", *syncInterval)
     setupWatchers(appMgr, time.Duration(*syncInterval)*time.Second)
 
     stopCh := make(chan struct{})
 
-    log.Infof("appMgr run")
+    log.Infof("---> appMgr run")
     appMgr.Run(stopCh)
 
-    log.Infof("signal process")
+    log.Infof("---> signal process")
     sigs := make(chan os.Signal, 1)
     signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
     sig := <-sigs
