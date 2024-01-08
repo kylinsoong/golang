@@ -83,10 +83,7 @@ func _init() {
     namespaceLabel = kubeFlags.String("namespace-label", "", "Optional, used to watch for namespaces with this label")
     namespaces = kubeFlags.StringArray("namespace", []string{}, "Optional, Kubernetes namespace(s) to watch. If left blank controller will watch all k8s namespaces")
     useNodeInternal = kubeFlags.Bool("use-node-internal", true, "Optional, provide kubernetes InternalIP addresses to pool")
-    poolMemberType = kubeFlags.String("pool-member-type", "nodeport",
-                "Optional, type of BIG-IP pool members to create. "+
-                        "'nodeport' will use k8s service NodePort. "+
-                        "'cluster' will use service endpoints. "+
+    poolMemberType = kubeFlags.String("pool-member-type", "nodeport", "Optional, type of BIG-IP pool members to create. 'nodeport' will use k8s service NodePort. 'cluster' will use service endpoints. "+
                         "The BIG-IP must be able access the cluster network"+
                         "'nodeportlocal' only supported with antrea cni")
     inCluster = kubeFlags.Bool("running-in-cluster", true, "Optional, if this controller is running in a kubernetes cluster, use the pod secrets for creating a Kubernetes client.")
@@ -262,13 +259,7 @@ func main() {
         watchAllNamespaces = false
     }
 
-    if *poolMemberType == "nodeport" {
-        isNodePort = true
-    } else if *poolMemberType == "cluster" || *poolMemberType == "nodeportlocal" {
-        isNodePort = false
-    } else {
-        return fmt.Errorf("'%v' is not a valid Pool Member Type", *poolMemberType)
-    }
+    isNodePort = false
 
     log.Infof("[INIT] Starting: K8S CLIENT TEST")
 

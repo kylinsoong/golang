@@ -4,6 +4,10 @@ import (
         "errors"
 )
 
+const (
+        MsgTypeSendDecl = "L4L7Declaration"
+)
+
 type CISAgentInterface interface {
         Initializer
         Deployer
