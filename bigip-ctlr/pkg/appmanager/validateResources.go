@@ -22,17 +22,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-        log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
-        . "github.com/kylinsoong/bigip-ctlr/pkg/resource"
+	. "github.com/kylinsoong/bigip-ctlr/pkg/resource"
+	log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
 	routeapi "github.com/openshift/api/route/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
 	netv1 "k8s.io/api/networking/v1"
 )
 
-func (appMgr *Manager) checkValidConfigMap(
-	obj interface{}, oprType string,
-) (bool, []*serviceQueueKey) {
+func (appMgr *Manager) checkValidConfigMap(obj interface{}, oprType string) (bool, []*serviceQueueKey) {
 	// Identify the specific service being referenced, and return it if it's
 	// one we care about.
 	var keyList []*serviceQueueKey
@@ -54,6 +52,7 @@ func (appMgr *Manager) checkValidConfigMap(
 				return false, nil
 			}
 		}
+		fmt.Printf("===> labels: %v, name: %s, namespace: %s\n", cm.Labels, cm.Name, namespace)
 		if ok := appMgr.processAgentLabels(cm.Labels, cm.Name, namespace); ok {
 			key := &serviceQueueKey{
 				Namespace:    namespace,
@@ -93,8 +92,7 @@ func (appMgr *Manager) checkValidConfigMap(
 		cfg.Virtual.VirtualAddress.BindAddr == "" {
 		// Check for IP annotation provided by IPAM system
 		if _, ok := cm.ObjectMeta.Annotations[F5VsBindAddrAnnotation]; !ok {
-			log.Infof("[CORE] No virtual IP was specified for the virtual server %s creating pool only.",
-				rsName)
+			log.Infof("[CORE] No virtual IP was specified for the virtual server %s creating pool only.", rsName)
 		}
 	}
 	for _, pool := range cfg.Pools {
@@ -154,8 +152,8 @@ func (appMgr *Manager) checkValidEndpoints(
 	return true, keyList
 }
 
-//checks for NPLPodAnnotation and populates nplstore, later used for poolmembers
-//if valid adds the related svc keys to queue.
+// checks for NPLPodAnnotation and populates nplstore, later used for poolmembers
+// if valid adds the related svc keys to queue.
 func (appMgr *Manager) checkValidPod(
 	obj interface{}, operation string,
 ) (bool, []*serviceQueueKey) {
@@ -650,7 +648,7 @@ func validateAppRootAnnotations(rsType int, entries map[string]string) {
 	}
 }
 
-//Validate certificate hostname
+// Validate certificate hostname
 func checkCertificateHost(host string, certificate string, key string) bool {
 	cert, certErr := tls.X509KeyPair([]byte(certificate), []byte(key))
 	if certErr != nil {
@@ -669,7 +667,7 @@ func checkCertificateHost(host string, certificate string, key string) bool {
 	return true
 }
 
-//validate config json
+// validate config json
 func validateConfigJson(tmpConfig string) error {
 	var tmp interface{}
 	err := json.Unmarshal([]byte(tmpConfig), &tmp)

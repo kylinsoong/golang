@@ -22,13 +22,13 @@ import (
 	"sync"
 	"time"
 
-        log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
+	log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-        bigIPPrometheus "github.com/kylinsoong/bigip-ctlr/pkg/prometheus"
+	bigIPPrometheus "github.com/kylinsoong/bigip-ctlr/pkg/prometheus"
 )
 
 type pollData struct {
@@ -81,7 +81,7 @@ func (np *nodePoller) Run() error {
 		np.running = true
 		go np.poller()
 		for _, pl := range np.regListeners {
-			log.Debugf("[CORE] NodePoller (%p) registering cached listener: %p\n",
+			log.Debugf("[CORE] NodePoller (%p) registering cached listener: %p",
 				np, pl)
 			np.runListener(pl)
 		}

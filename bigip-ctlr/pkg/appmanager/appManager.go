@@ -266,10 +266,8 @@ const (
 
 // Create and return a new app manager that meets the Manager interface
 func NewManager(params *Params) *Manager {
-	vsQueue := workqueue.NewNamedRateLimitingQueue(
-		workqueue.DefaultControllerRateLimiter(), "virtual-server-controller")
-	nsQueue := workqueue.NewNamedRateLimitingQueue(
-		workqueue.DefaultControllerRateLimiter(), "namespace-controller")
+	vsQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "virtual-server-controller")
+	nsQueue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "namespace-controller")
 	manager := Manager{
 		resources:              NewResources(),
 		customProfiles:         NewCustomProfiles(),
@@ -426,17 +424,6 @@ func (appMgr *Manager) AddNamespaceLabelInformer(labelSelector labels.Selector, 
 	)
 
 	return nil
-}
-
-func (appMgr *Manager) enqueueNamespace(obj interface{}) {
-	ns := obj.(*v1.Namespace)
-	if !appMgr.DynamicNS && !appMgr.watchingAllNamespacesLocked() {
-		if _, ok := appMgr.getNamespaceInformer(ns.Name); !ok {
-			return
-		}
-	}
-
-	appMgr.nsQueue.Add(ns.ObjectMeta.Name)
 }
 
 func (appMgr *Manager) namespaceWorker() {
@@ -878,12 +865,23 @@ func (appMgr *Manager) newAppInformer(namespace string, cfgMapSelector labels.Se
 	return &appInf
 }
 
+func (appMgr *Manager) enqueueNamespace(obj interface{}) {
+	ns := obj.(*v1.Namespace)
+	if !appMgr.DynamicNS && !appMgr.watchingAllNamespacesLocked() {
+		if _, ok := appMgr.getNamespaceInformer(ns.Name); !ok {
+			return
+		}
+	}
+	appMgr.nsQueue.Add(ns.ObjectMeta.Name)
+	log.Infof("[CORE] Add %s to nsQueue", ns.ObjectMeta.Name)
+}
+
 func (appMgr *Manager) enqueueConfigMap(obj interface{}, operation string) {
 	if ok, keys := appMgr.checkValidConfigMap(obj, operation); ok {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 }
@@ -893,7 +891,7 @@ func (appMgr *Manager) enqueueService(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 }
@@ -903,7 +901,7 @@ func (appMgr *Manager) enqueueEndpoints(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 }
@@ -913,7 +911,7 @@ func (appMgr *Manager) enqueuePod(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 }
@@ -923,7 +921,7 @@ func (appMgr *Manager) enqueueSecrets(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 
@@ -934,7 +932,7 @@ func (appMgr *Manager) enqueueIngress(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 }
@@ -947,7 +945,7 @@ func (appMgr *Manager) enqueueRoute(obj interface{}, operation string) {
 		for _, key := range keys {
 			key.Operation = operation
 			appMgr.vsQueue.Add(*key)
-			log.Infof("[CORE] Add %v to queue", *key)
+			log.Infof("[CORE] Add %v to vsQueue", *key)
 		}
 	}
 }
@@ -1431,8 +1429,7 @@ func (appMgr *Manager) syncVirtualServer(sKey serviceQueueKey) error {
 		stats.vsUpdated += appMgr.deleteUnusedResources(sKey, svcFound)
 	}
 
-	log.Debugf("[CORE] Updated %v of %v virtual server configs, deleted %v",
-		stats.vsUpdated, stats.vsFound, stats.vsDeleted)
+	log.Debugf("[CORE] Updated %v of %v virtual server configs, deleted %v", stats.vsUpdated, stats.vsFound, stats.vsDeleted)
 
 	// delete any custom profiles that are no longer referenced
 	appMgr.deleteUnusedProfiles(appInf, sKey.Namespace, &stats)
@@ -1476,9 +1473,7 @@ func (appMgr *Manager) syncConfigMaps(
 			appLabel, appOk := svc.ObjectMeta.Labels["cis.f5.com/as3-app"]
 			poolLabel, poolOk := svc.ObjectMeta.Labels["cis.f5.com/as3-pool"]
 
-			selector := "cis.f5.com/as3-tenant=" + tntLabel + "," +
-				"cis.f5.com/as3-app=" + appLabel + "," +
-				"cis.f5.com/as3-pool=" + poolLabel
+			selector := "cis.f5.com/as3-tenant=" + tntLabel + "," + "cis.f5.com/as3-app=" + appLabel + "," + "cis.f5.com/as3-pool=" + poolLabel
 
 			key := sKey.Namespace + "/" + sKey.ServiceName
 
@@ -1516,11 +1511,9 @@ func (appMgr *Manager) syncConfigMaps(
 		}
 	}
 
-	cfgMapsByIndex, err := appInf.cfgMapInformer.GetIndexer().ByIndex(
-		"namespace", sKey.Namespace)
+	cfgMapsByIndex, err := appInf.cfgMapInformer.GetIndexer().ByIndex("namespace", sKey.Namespace)
 	if nil != err {
-		log.Warningf("[CORE] Unable to list config maps for namespace '%v': %v",
-			sKey.Namespace, err)
+		log.Warningf("[CORE] Unable to list config maps for namespace '%v': %v", sKey.Namespace, err)
 		return err
 	}
 	appMgr.TeemData.Lock()
@@ -1589,8 +1582,7 @@ func (appMgr *Manager) syncConfigMaps(
 					Get(context.TODO(), profile.Name, metav1.GetOptions{})
 				if err != nil {
 					// No secret, so we assume the profile is a BIG-IP default
-					log.Debugf("[CORE] No Secret with name '%s' in namespace '%s', "+
-						"parsing secretName as path instead.", profile.Name, sKey.Namespace)
+					log.Debugf("[CORE] No Secret with name '%s' in namespace '%s', parsing secretName as path instead.", profile.Name, sKey.Namespace)
 					continue
 				}
 
@@ -1607,9 +1599,7 @@ func (appMgr *Manager) syncConfigMaps(
 		}
 
 		rsName := rsCfg.GetName()
-		ok, found, updated := appMgr.handleConfigForType(
-			rsCfg, sKey, rsMap, rsName, svcPortMap,
-			svc, appInf, []string{}, nil)
+		ok, found, updated := appMgr.handleConfigForType(rsCfg, sKey, rsMap, rsName, svcPortMap, svc, appInf, []string{}, nil)
 		if !ok {
 			stats.vsUpdated += updated
 			continue
@@ -1663,11 +1653,9 @@ func (appMgr *Manager) syncIngresses(
 	appInf *appInformer,
 	dgMap InternalDataGroupMap,
 ) error {
-	ingByIndex, err := appInf.ingInformer.GetIndexer().ByIndex(
-		"namespace", sKey.Namespace)
+	ingByIndex, err := appInf.ingInformer.GetIndexer().ByIndex("namespace", sKey.Namespace)
 	if nil != err {
-		log.Warningf("[CORE] Unable to list ingresses for namespace '%v': %v",
-			sKey.Namespace, err)
+		log.Warningf("[CORE] Unable to list ingresses for namespace '%v': %v", sKey.Namespace, err)
 		return err
 	}
 	appMgr.TeemData.Lock()
@@ -1750,13 +1738,10 @@ func (appMgr *Manager) syncIngresses(
 						appMgr.recordIngressEvent(ing, "InvalidData", msg)
 					} else {
 						if nil != ing.Spec.Backend {
-							fullPoolName := fmt.Sprintf("/%s/%s", rsCfg.Virtual.Partition,
-								FormatIngressPoolName(sKey.Namespace, sKey.ServiceName))
-							appMgr.handleSingleServiceHealthMonitors(
-								rsName, fullPoolName, rsCfg, ing, monitors)
+							fullPoolName := fmt.Sprintf("/%s/%s", rsCfg.Virtual.Partition, FormatIngressPoolName(sKey.Namespace, sKey.ServiceName))
+							appMgr.handleSingleServiceHealthMonitors(rsName, fullPoolName, rsCfg, ing, monitors)
 						} else {
-							appMgr.handleMultiServiceHealthMonitors(
-								rsName, rsCfg, ing, monitors)
+							appMgr.handleMultiServiceHealthMonitors(rsName, rsCfg, ing, monitors)
 						}
 					}
 					rsCfg.SortMonitors()
@@ -1873,8 +1858,7 @@ func (appMgr *Manager) syncIngresses(
 				return !ingFound
 			}
 
-			depsAdded, depsRemoved := appMgr.resources.UpdateDependencies(
-				objKey, objDeps, svcDepKey, ingressLookupFunc)
+			depsAdded, depsRemoved := appMgr.resources.UpdateDependencies(objKey, objDeps, svcDepKey, ingressLookupFunc)
 			portStructs := appMgr.v1VirtualPorts(ing)
 			for i, portStruct := range portStructs {
 				rsCfg := appMgr.createRSConfigFromV1Ingress(
@@ -2112,12 +2096,9 @@ func (appMgr *Manager) syncRoutes(
 		_, depsRemoved := appMgr.resources.UpdateDependencies(
 			objKey, objDeps, svcDepKey, routeLookupFunc)
 
-		pStructs := []portStruct{{protocol: "http", port: DEFAULT_HTTP_PORT},
-			{protocol: "https", port: DEFAULT_HTTPS_PORT}}
+		pStructs := []portStruct{{protocol: "http", port: DEFAULT_HTTP_PORT}, {protocol: "https", port: DEFAULT_HTTPS_PORT}}
 		for _, ps := range pStructs {
-			rsCfg, err, pool := appMgr.createRSConfigFromRoute(
-				route, svcName, appMgr.resources, appMgr.routeConfig, ps,
-				appInf.svcInformer.GetIndexer(), svcFwdRulesMap, appMgr.vsSnatPoolName)
+			rsCfg, err, pool := appMgr.createRSConfigFromRoute(route, svcName, appMgr.resources, appMgr.routeConfig, ps, appInf.svcInformer.GetIndexer(), svcFwdRulesMap, appMgr.vsSnatPoolName)
 			if err != nil {
 				log.Warningf("[CORE] %v", err)
 				continue
@@ -2131,8 +2112,7 @@ func (appMgr *Manager) syncRoutes(
 				var monitors AnnotationHealthMonitors
 				err := json.Unmarshal([]byte(hmStr), &monitors)
 				if err != nil {
-					log.Errorf("[CORE] Unable to parse health monitor JSON array '%v': %v",
-						hmStr, err)
+					log.Errorf("[CORE] Unable to parse health monitor JSON array '%v': %v", hmStr, err)
 				} else {
 					appMgr.handleRouteHealthMonitors(rsName, pool, rsCfg, monitors, stats)
 				}
@@ -2153,8 +2133,7 @@ func (appMgr *Manager) syncRoutes(
 					path := route.Spec.Path
 					sslPath := hostName + path
 					sslPath = strings.TrimSuffix(sslPath, "/")
-					updateDataGroup(dgMap, EdgeServerSslDgName,
-						DEFAULT_PARTITION, sKey.Namespace, sslPath, serverSsl)
+					updateDataGroup(dgMap, EdgeServerSslDgName, DEFAULT_PARTITION, sKey.Namespace, sslPath, serverSsl)
 
 				case routeapi.TLSTerminationReencrypt:
 					appMgr.setClientSslProfile(stats, sKey, rsCfg, route)
@@ -2167,8 +2146,7 @@ func (appMgr *Manager) syncRoutes(
 					sslPath := hostName + path
 					sslPath = strings.TrimSuffix(sslPath, "/")
 					if "" != serverSsl {
-						updateDataGroup(dgMap, ReencryptServerSslDgName,
-							DEFAULT_PARTITION, sKey.Namespace, sslPath, serverSsl)
+						updateDataGroup(dgMap, ReencryptServerSslDgName, DEFAULT_PARTITION, sKey.Namespace, sslPath, serverSsl)
 					}
 				}
 			}
@@ -2226,9 +2204,7 @@ func (appMgr *Manager) syncRoutes(
 				rsCfg.SetPolicy(pol)
 			}
 
-			_, found, updated := appMgr.handleConfigForType(
-				rsCfg, sKey, rsMap, rsName, svcPortMap,
-				svc, appInf, svcNames, nil)
+			_, found, updated := appMgr.handleConfigForType(rsCfg, sKey, rsMap, rsName, svcPortMap, svc, appInf, svcNames, nil)
 			stats.vsFound += found
 			stats.vsUpdated += updated
 		}
@@ -2238,14 +2214,11 @@ func (appMgr *Manager) syncRoutes(
 			// info to the A/B data group).
 			switch route.Spec.TLS.Termination {
 			case routeapi.TLSTerminationPassthrough:
-				updateDataGroupForPassthroughRoute(route, DEFAULT_PARTITION,
-					sKey.Namespace, dgMap)
+				updateDataGroupForPassthroughRoute(route, DEFAULT_PARTITION, sKey.Namespace, dgMap)
 			case routeapi.TLSTerminationReencrypt:
-				updateDataGroupForReencryptRoute(route, DEFAULT_PARTITION,
-					sKey.Namespace, dgMap)
+				updateDataGroupForReencryptRoute(route, DEFAULT_PARTITION, sKey.Namespace, dgMap)
 			case routeapi.TLSTerminationEdge:
-				updateDataGroupForEdgeRoute(route, DEFAULT_PARTITION,
-					sKey.Namespace, dgMap)
+				updateDataGroupForEdgeRoute(route, DEFAULT_PARTITION, sKey.Namespace, dgMap)
 			}
 		}
 		updateDataGroupForABRoute(route, svcName, DEFAULT_PARTITION, sKey.Namespace, dgMap)
@@ -2484,10 +2457,8 @@ func (appMgr *Manager) handleConfigForTypeIngress(
 
 			bigIPPrometheus.MonitoredServices.WithLabelValues(sKey.Namespace, rsName, "port-not-found").Set(0)
 			if _, ok := svcPortMap[pool.ServicePort]; !ok {
-				log.Debugf("[CORE] Process Service delete - name: %v namespace: %v",
-					pool.ServiceName, svcKey.Namespace)
-				log.Infof("[CORE] Port '%v' for service '%v' was not found.",
-					pool.ServicePort, pool.ServiceName)
+				log.Debugf("[CORE] Process Service delete - name: %v namespace: %v", pool.ServiceName, svcKey.Namespace)
+				log.Infof("[CORE] Port '%v' for service '%v' was not found.", pool.ServicePort, pool.ServiceName)
 				bigIPPrometheus.MonitoredServices.WithLabelValues(sKey.Namespace, rsName, "port-not-found").Set(1)
 				bigIPPrometheus.MonitoredServices.WithLabelValues(sKey.Namespace, rsName, "success").Set(0)
 				if appMgr.deactivateVirtualServer(svcKey, rsName, rsCfg, plIdx) {
@@ -2508,14 +2479,11 @@ func (appMgr *Manager) handleConfigForTypeIngress(
 				appMgr.exposeKubernetesService(svc, svcKey, rsCfg, appInf, plIdx)
 			} else {
 				if appMgr.IsNodePort() {
-					correctBackend, reason, msg =
-						appMgr.updatePoolMembersForNodePort(svc, svcKey, rsCfg, plIdx)
+					correctBackend, reason, msg = appMgr.updatePoolMembersForNodePort(svc, svcKey, rsCfg, plIdx)
 				} else if appMgr.poolMemberType == NodePortLocal {
-					correctBackend, reason, msg =
-						appMgr.updatePoolMembersForNPL(svc, svcKey, rsCfg, plIdx)
+					correctBackend, reason, msg = appMgr.updatePoolMembersForNPL(svc, svcKey, rsCfg, plIdx)
 				} else {
-					correctBackend, reason, msg =
-						appMgr.updatePoolMembersForCluster(svc, svcKey, rsCfg, appInf, plIdx)
+					correctBackend, reason, msg = appMgr.updatePoolMembersForCluster(svc, svcKey, rsCfg, appInf, plIdx)
 				}
 			}
 			// This will only update the config if the vs actually changed.
@@ -2644,10 +2612,8 @@ func (appMgr *Manager) handleConfigForType(
 	deactivated := false
 	bigIPPrometheus.MonitoredServices.WithLabelValues(sKey.Namespace, rsName, "port-not-found").Set(0)
 	if _, ok := svcPortMap[pool.ServicePort]; !ok {
-		log.Debugf("[CORE] Process Service delete - name: %v namespace: %v",
-			pool.ServiceName, svcKey.Namespace)
-		log.Infof("[CORE] Port '%v' for service '%v' was not found.",
-			pool.ServicePort, pool.ServiceName)
+		log.Debugf("[CORE] Process Service delete - name: %v namespace: %v", pool.ServiceName, svcKey.Namespace)
+		log.Infof("[CORE] Port '%v' for service '%v' was not found.", pool.ServicePort, pool.ServiceName)
 		bigIPPrometheus.MonitoredServices.WithLabelValues(sKey.Namespace, rsName, "port-not-found").Set(1)
 		bigIPPrometheus.MonitoredServices.WithLabelValues(sKey.Namespace, rsName, "success").Set(0)
 		if appMgr.deactivateVirtualServer(svcKey, rsName, rsCfg, plIdx) {
@@ -2694,14 +2660,11 @@ func (appMgr *Manager) handleConfigForType(
 		appMgr.exposeKubernetesService(svc, svcKey, rsCfg, appInf, plIdx)
 	} else {
 		if appMgr.IsNodePort() {
-			correctBackend, reason, msg =
-				appMgr.updatePoolMembersForNodePort(svc, svcKey, rsCfg, plIdx)
+			correctBackend, reason, msg = appMgr.updatePoolMembersForNodePort(svc, svcKey, rsCfg, plIdx)
 		} else if appMgr.poolMemberType == NodePortLocal {
-			correctBackend, reason, msg =
-				appMgr.updatePoolMembersForNPL(svc, svcKey, rsCfg, plIdx)
+			correctBackend, reason, msg = appMgr.updatePoolMembersForNPL(svc, svcKey, rsCfg, plIdx)
 		} else {
-			correctBackend, reason, msg =
-				appMgr.updatePoolMembersForCluster(svc, svcKey, rsCfg, appInf, plIdx)
+			correctBackend, reason, msg = appMgr.updatePoolMembersForCluster(svc, svcKey, rsCfg, appInf, plIdx)
 		}
 	}
 
@@ -2761,11 +2724,9 @@ func (appMgr *Manager) updatePoolMembersForNodePort(
 	if svc.Spec.Type == v1.ServiceTypeNodePort || svc.Spec.Type == v1.ServiceTypeLoadBalancer {
 		for _, portSpec := range svc.Spec.Ports {
 			if portSpec.Port == svcKey.ServicePort {
-				log.Debugf("[CORE] Service backend matched %+v: using node port %v",
-					svcKey, portSpec.NodePort)
+				log.Debugf("[CORE] Service backend matched %+v: using node port %v", svcKey, portSpec.NodePort)
 				rsCfg.MetaData.Active = true
-				rsCfg.Pools[index].Members =
-					appMgr.getEndpointsForNodePort(portSpec.NodePort, portSpec.Port)
+				rsCfg.Pools[index].Members = appMgr.getEndpointsForNodePort(portSpec.NodePort, portSpec.Port)
 			}
 		}
 		//check if endpoints are found
@@ -2871,8 +2832,7 @@ func (appMgr *Manager) deactivateVirtualServer(
 		}
 
 		if !rsCfg.MetaData.Active {
-			log.Debugf("[CORE] Service delete matching backend '%v', deactivating config '%v'",
-				sKey, rsName)
+			log.Debugf("[CORE] Service delete matching backend '%v', deactivating config '%v'", sKey, rsName)
 		}
 
 		if !reflect.DeepEqual(rs, rsCfg) {
@@ -2915,8 +2875,7 @@ func (appMgr *Manager) getResourcesForKey(sKey serviceQueueKey) ResourceMap {
 	appMgr.resources.ForEach(func(key ServiceKey, cfg *ResourceConfig) {
 		if key.Namespace == sKey.Namespace &&
 			key.ServiceName == sKey.ServiceName {
-			rsMap[key.ServicePort] =
-				append(rsMap[key.ServicePort], cfg)
+			rsMap[key.ServicePort] = append(rsMap[key.ServicePort], cfg)
 		}
 	})
 	return rsMap
@@ -2971,8 +2930,7 @@ func (appMgr *Manager) deleteUnusedResources(
 	namespace := sKey.Namespace
 	svcName := sKey.ServiceName
 	for _, cfg := range appMgr.resources.GetAllResources() {
-		if cfg.MetaData.ResourceType == "configmap" ||
-			cfg.MetaData.ResourceType == "iapp" {
+		if cfg.MetaData.ResourceType == "configmap" || cfg.MetaData.ResourceType == "iapp" {
 			continue
 		}
 		for _, pool := range cfg.Pools {
@@ -2997,11 +2955,7 @@ func (appMgr *Manager) deleteUnusedResources(
 	return rsUpdated
 }
 
-func (appMgr *Manager) setBindAddrAnnotation(
-	cm *v1.ConfigMap,
-	sKey serviceQueueKey,
-	rsCfg *ResourceConfig,
-) {
+func (appMgr *Manager) setBindAddrAnnotation(cm *v1.ConfigMap, sKey serviceQueueKey, rsCfg *ResourceConfig) {
 	var doUpdate bool
 	if cm.ObjectMeta.Annotations == nil {
 		cm.ObjectMeta.Annotations = make(map[string]string)
@@ -3011,25 +2965,18 @@ func (appMgr *Manager) setBindAddrAnnotation(
 		doUpdate = true
 	}
 	if doUpdate {
-		cm.ObjectMeta.Annotations[VsStatusBindAddrAnnotation] =
-			rsCfg.Virtual.VirtualAddress.BindAddr
+		cm.ObjectMeta.Annotations[VsStatusBindAddrAnnotation] = rsCfg.Virtual.VirtualAddress.BindAddr
 		_, err := appMgr.kubeClient.CoreV1().ConfigMaps(sKey.Namespace).Update(context.TODO(), cm, metav1.UpdateOptions{})
 		if nil != err {
 			log.Warningf("[CORE] Error when creating status IP annotation: %s", err)
 		} else {
-			log.Debugf("[CORE] Updating ConfigMap %+v annotation - %v: %v",
-				sKey, VsStatusBindAddrAnnotation,
-				rsCfg.Virtual.VirtualAddress.BindAddr)
+			log.Debugf("[CORE] Updating ConfigMap %+v annotation - %v: %v", sKey, VsStatusBindAddrAnnotation, rsCfg.Virtual.VirtualAddress.BindAddr)
 		}
 	}
 }
 
 // TODO remove the function once v1beta1.Ingress is deprecated in k8s 1.22
-func (appMgr *Manager) setIngressStatus(
-	ing *v1beta1.Ingress,
-	rsCfg *ResourceConfig,
-	appInf *appInformer,
-) {
+func (appMgr *Manager) setIngressStatus(ing *v1beta1.Ingress, rsCfg *ResourceConfig, appInf *appInformer) {
 	// Set the ingress status to include the virtual IP
 	ip, _ := Split_ip_with_route_domain(rsCfg.Virtual.VirtualAddress.BindAddr)
 	//lbIngress := v1.LoadBalancerIngress{IP: ip}
@@ -3094,9 +3041,7 @@ func (appMgr *Manager) resolveIngressHost(ing *v1beta1.Ingress, namespace string
 			return
 		} else {
 			if len(netIPs) > 1 {
-				log.Warningf(
-					"Resolved multiple IP addresses for host '%s', "+
-						"choosing first resolved address.", host)
+				log.Warningf("Resolved multiple IP addresses for host '%s', choosing first resolved address.", host)
 			}
 			ipAddress = netIPs[0].String()
 		}
@@ -3152,11 +3097,7 @@ func (appMgr *Manager) resolveIngressHost(ing *v1beta1.Ingress, namespace string
 	}
 }
 
-func (appMgr *Manager) getEndpointsForCluster(
-	portName string,
-	eps *v1.Endpoints,
-	clusterIP string,
-) []Member {
+func (appMgr *Manager) getEndpointsForCluster(portName string, eps *v1.Endpoints, clusterIP string) []Member {
 	nodes := appMgr.getNodesFromCache()
 	var members []Member
 
@@ -3190,9 +3131,7 @@ func (appMgr *Manager) getEndpointsForCluster(
 	return members
 }
 
-func (appMgr *Manager) getEndpointsForNodePort(
-	nodePort, port int32,
-) []Member {
+func (appMgr *Manager) getEndpointsForNodePort(nodePort, port int32) []Member {
 	nodes := appMgr.getNodesFromCache()
 	var members []Member
 	uniqueMembersMap := make(map[Member]struct{})
@@ -3212,14 +3151,8 @@ func (appMgr *Manager) getEndpointsForNodePort(
 	return members
 }
 
-func handleConfigMapParseFailure(
-	appMgr *Manager,
-	cm *v1.ConfigMap,
-	cfg *ResourceConfig,
-	err error,
-) bool {
-	log.Warningf("[CORE] Could not get config for ConfigMap: %v - %v",
-		cm.ObjectMeta.Name, err)
+func handleConfigMapParseFailure(appMgr *Manager, cm *v1.ConfigMap, cfg *ResourceConfig, err error) bool {
+	log.Warningf("[CORE] Could not get config for ConfigMap: %v - %v", cm.ObjectMeta.Name, err)
 	// If virtual server exists for invalid configmap, delete it
 	var serviceName string
 	var servicePort int32
@@ -3239,8 +3172,7 @@ func handleConfigMapParseFailure(
 			appMgr.resources.Delete(sKey, rsName)
 			delete(cm.ObjectMeta.Annotations, VsStatusBindAddrAnnotation)
 			appMgr.kubeClient.CoreV1().ConfigMaps(cm.ObjectMeta.Namespace).Update(context.TODO(), cm, metav1.UpdateOptions{})
-			log.Warningf("[CORE] Deleted virtual server associated with ConfigMap: %v",
-				cm.ObjectMeta.Name)
+			log.Warningf("[CORE] Deleted virtual server associated with ConfigMap: %v", cm.ObjectMeta.Name)
 			return true
 		}
 	}
@@ -3514,13 +3446,7 @@ func (appMgr *Manager) getEndpoints(selector, namespace string) []Member {
 	return members
 }
 
-func (appMgr *Manager) exposeKubernetesService(
-	svc *v1.Service,
-	sKey ServiceKey,
-	rsCfg *ResourceConfig,
-	appInf *appInformer,
-	index int,
-) (bool, string, string) {
+func (appMgr *Manager) exposeKubernetesService(svc *v1.Service, sKey ServiceKey, rsCfg *ResourceConfig, appInf *appInformer, index int) (bool, string, string) {
 	svcKey := sKey.Namespace + "/" + sKey.ServiceName
 	item, found, _ := appInf.endptInformer.GetStore().GetByKey(svcKey)
 	if !found {
@@ -3677,10 +3603,7 @@ func (appMgr *Manager) GetPodsForService(namespace, serviceName string) *v1.PodL
 }
 
 // getEndpointsForNPL returns members.
-func (appMgr *Manager) getEndpointsForNPL(
-	podPort int32,
-	pods *v1.PodList,
-) []Member {
+func (appMgr *Manager) getEndpointsForNPL(podPort int32, pods *v1.PodList) []Member {
 	var members []Member
 	for _, pod := range pods.Items {
 		anns, found := appMgr.nplStore[pod.Namespace+"/"+pod.Name]
