@@ -161,14 +161,14 @@ type WatchedNamespaces struct {
 	NamespaceLabel string
 }
 
-//NPL information from pod annotation
+// NPL information from pod annotation
 type NPLAnnotation struct {
 	PodPort  int32  `json:"podPort"`
 	NodeIP   string `json:"nodeIP"`
 	NodePort int32  `json:"nodePort"`
 }
 
-//List of NPL annotations
+// List of NPL annotations
 type NPLAnnoations []NPLAnnotation
 
 // Struct to allow NewManager to receive all or only specific parameters.
@@ -343,31 +343,24 @@ func (appMgr *Manager) watchingAllNamespacesLocked() bool {
 	return watchingAll
 }
 
-func (appMgr *Manager) AddNamespace(
-	namespace string,
-	cfgMapSelector labels.Selector,
-	resyncPeriod time.Duration,
-) error {
+func (appMgr *Manager) AddNamespace(namespace string, cfgMapSelector labels.Selector, resyncPeriod time.Duration) error {
 	appMgr.informersMutex.Lock()
 	defer appMgr.informersMutex.Unlock()
 	_, err := appMgr.addNamespaceLocked(namespace, cfgMapSelector, resyncPeriod)
 	return err
 }
 
-func (appMgr *Manager) addNamespaceLocked(
-	namespace string,
-	cfgMapSelector labels.Selector,
-	resyncPeriod time.Duration,
-) (*appInformer, error) {
+func (appMgr *Manager) addNamespaceLocked(namespace string, cfgMapSelector labels.Selector, resyncPeriod time.Duration) (*appInformer, error) {
+
 	// Check if watching all namespaces by checking all appInformers is created for "" namespace
 	if appMgr.watchingAllNamespacesLocked() {
-		return nil, fmt.Errorf(
-			"Cannot add additional namespaces when already watching all.")
+		return nil, fmt.Errorf("Cannot add additional namespaces when already watching all.")
 	}
+
 	if len(appMgr.appInformers) > 0 && "" == namespace {
-		return nil, fmt.Errorf(
-			"Cannot watch all namespaces when already watching specific ones.")
+		return nil, fmt.Errorf("Cannot watch all namespaces when already watching specific ones.")
 	}
+
 	var appInf *appInformer
 	var found bool
 	if appInf, found = appMgr.appInformers[namespace]; found {
@@ -394,22 +387,23 @@ func (appMgr *Manager) removeNamespaceLocked(namespace string) error {
 }
 
 // AddNamespaceLabelInformer spins an informer to watch all namespaces with matching label
-func (appMgr *Manager) AddNamespaceLabelInformer(
-	labelSelector labels.Selector,
-	resyncPeriod time.Duration,
-) error {
+func (appMgr *Manager) AddNamespaceLabelInformer(labelSelector labels.Selector, resyncPeriod time.Duration) error {
+
 	appMgr.informersMutex.Lock()
 	defer appMgr.informersMutex.Unlock()
+
 	if nil != appMgr.nsInformer {
 		return fmt.Errorf("Already have a namespace label informer added.")
 	}
+
 	if 0 != len(appMgr.appInformers) {
-		return fmt.Errorf("Cannot set a namespace label informer when informers " +
-			"have been setup for one or more namespaces.")
+		return fmt.Errorf("Cannot set a namespace label informer when informers have been setup for one or more namespaces.")
 	}
+
 	optionsModifier := func(options *metav1.ListOptions) {
 		options.LabelSelector = labelSelector.String()
 	}
+
 	appMgr.nsInformer = cache.NewSharedIndexInformer(
 		cache.NewFilteredListWatchFromClient(
 			appMgr.restClientv1,
@@ -421,6 +415,7 @@ func (appMgr *Manager) AddNamespaceLabelInformer(
 		resyncPeriod,
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
+
 	appMgr.nsInformer.AddEventHandlerWithResyncPeriod(
 		&cache.ResourceEventHandlerFuncs{
 			AddFunc:    func(obj interface{}) { appMgr.enqueueNamespace(obj) },
@@ -626,15 +621,14 @@ type appInformer struct {
 	stopCh           chan struct{}
 }
 
-func (appMgr *Manager) newAppInformer(
-	namespace string,
-	cfgMapSelector labels.Selector,
-	resyncPeriod time.Duration,
-) *appInformer {
-	log.Debugf("[CORE] Creating new app informer")
+func (appMgr *Manager) newAppInformer(namespace string, cfgMapSelector labels.Selector, resyncPeriod time.Duration) *appInformer {
+
+	log.Debugf("[CORE] Creating new app informer on namespace %s", namespace)
+
 	everything := func(options *metav1.ListOptions) {
 		options.LabelSelector = ""
 	}
+
 	appInf := appInformer{
 		namespace: namespace,
 		stopCh:    make(chan struct{}),
@@ -672,6 +666,7 @@ func (appMgr *Manager) newAppInformer(
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 		),
 	}
+
 	//enable podinformer for nodeport local
 	if appMgr.poolMemberType == NodePortLocal {
 		appInf.podInformer = cache.NewSharedIndexInformer(
@@ -687,7 +682,7 @@ func (appMgr *Manager) newAppInformer(
 		)
 	}
 	if true == appMgr.manageIngress {
-		log.Infof("[CORE] Watching Ingress resources.")
+		log.Infof("[CORE] Watching Ingress resources on namespace %s", namespace)
 		// TODO Remove the version comparison once v1beta1.Ingress is deprecated in k8s 1.22
 		out := semver.Compare(appMgr.K8sVersion, "v1.19.0")
 		if out >= 0 {
@@ -728,7 +723,7 @@ func (appMgr *Manager) newAppInformer(
 		}
 
 	} else {
-		log.Infof("[CORE] Not watching Ingress resources.")
+		log.Infof("[CORE] Not watching Ingress resources on namespace %s", namespace)
 	}
 
 	if false != appMgr.manageConfigMaps {
@@ -736,7 +731,7 @@ func (appMgr *Manager) newAppInformer(
 		cfgMapOptions := func(options *metav1.ListOptions) {
 			options.LabelSelector = appMgr.configMapLabel
 		}
-		log.Infof("[CORE] Watching ConfigMap resources.")
+		log.Infof("[CORE] Watching ConfigMap resources on namespace %s", namespace)
 		//If Hubmode is enabled, process configmaps every 30 seconds to process unwatched namespace deployments
 		syncInterval := resyncPeriod
 		if appMgr.hubMode {
@@ -754,7 +749,7 @@ func (appMgr *Manager) newAppInformer(
 			cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 		)
 	} else {
-		log.Infof("[CORE] Not watching ConfigMap resources.")
+		log.Infof("[CORE] Not watching ConfigMap resources on namespace %s", namespace)
 	}
 
 	if nil != appMgr.routeClientV1 {
@@ -778,7 +773,7 @@ func (appMgr *Manager) newAppInformer(
 	}
 
 	if false != appMgr.manageConfigMaps {
-		log.Infof("[CORE] Handling ConfigMap resource events.")
+		log.Infof("[CORE] Handling ConfigMap resource events on namespace %s", namespace)
 		// If Hubmode is enabled, process configmaps every 30 seconds to process unwatched namespace deployments
 		syncInterval := resyncPeriod
 		if appMgr.hubMode {
@@ -797,7 +792,7 @@ func (appMgr *Manager) newAppInformer(
 			syncInterval,
 		)
 	} else {
-		log.Infof("[CORE] Not handling ConfigMap resource events.")
+		log.Infof("[CORE] Not handling ConfigMap resource events on namespace %s", namespace)
 	}
 
 	appInf.svcInformer.AddEventHandlerWithResyncPeriod(
@@ -836,7 +831,7 @@ func (appMgr *Manager) newAppInformer(
 		)
 	}
 	if true == appMgr.manageIngress {
-		log.Infof("[CORE] Handling Ingress resource events.")
+		log.Infof("[CORE] Handling Ingress resource events on namespace %s", namespace)
 		appInf.ingInformer.AddEventHandlerWithResyncPeriod(
 			&cache.ResourceEventHandlerFuncs{
 				AddFunc:    func(obj interface{}) { appMgr.enqueueIngress(obj, OprTypeCreate) },
@@ -858,7 +853,7 @@ func (appMgr *Manager) newAppInformer(
 			)
 		}
 	} else {
-		log.Infof("[CORE] Not handling Ingress resource events.")
+		log.Infof("[CORE] Not handling Ingress resource events on namespace %s", namespace)
 	}
 
 	if nil != appMgr.routeClientV1 {
@@ -957,18 +952,14 @@ func (appMgr *Manager) enqueueRoute(obj interface{}, operation string) {
 	}
 }
 
-func (appMgr *Manager) getNamespaceInformer(
-	ns string,
-) (*appInformer, bool) {
+func (appMgr *Manager) getNamespaceInformer(ns string) (*appInformer, bool) {
 	appMgr.informersMutex.Lock()
 	defer appMgr.informersMutex.Unlock()
 	appInf, found := appMgr.getNamespaceInformerLocked(ns)
 	return appInf, found
 }
 
-func (appMgr *Manager) getNamespaceInformerLocked(
-	ns string,
-) (*appInformer, bool) {
+func (appMgr *Manager) getNamespaceInformerLocked(ns string) (*appInformer, bool) {
 	toFind := ns
 	if appMgr.watchingAllNamespacesLocked() {
 		toFind = ""
@@ -3367,7 +3358,7 @@ func containsNode(nodes []Node, name string) bool {
 
 type byTimestamp []v1.Service
 
-//sort services by timestamp
+// sort services by timestamp
 func (slice byTimestamp) Len() int {
 	return len(slice)
 }

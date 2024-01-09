@@ -17,3 +17,5 @@
 *.mod
 *.sum
 *.out
+__debug_*
+.vscode

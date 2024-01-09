@@ -128,3 +128,37 @@ go build -o a.out cmd/greetings/*.go
 # ./a.out
 ----
 
+== Map
+
+== Multi-threads
+
+=== goroutine
+
+The goroutine is a lightweight thread of execution managed by the Go runtime. Goroutines enable concurrent programming in a way that is more efficient and scalable compared to traditional threads.
+
+[source, go]
+.*Example*
+----
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func printNumbers() {
+    for i := 1; i <= 5; i++ {
+        time.Sleep(100 * time.Millisecond)
+        fmt.Printf("%d \n", i)
+    }
+}
+
+func main() {
+    go printNumbers()
+
+    for i := 1; i <= 5; i++ {
+        time.Sleep(100 * time.Millisecond)
+        fmt.Printf("A%d \n", i)
+    }
+}
+----
