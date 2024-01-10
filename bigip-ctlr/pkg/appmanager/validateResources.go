@@ -52,7 +52,6 @@ func (appMgr *Manager) checkValidConfigMap(obj interface{}, oprType string) (boo
 				return false, nil
 			}
 		}
-		fmt.Printf("===> labels: %v, name: %s, namespace: %s\n", cm.Labels, cm.Name, namespace)
 		if ok := appMgr.processAgentLabels(cm.Labels, cm.Name, namespace); ok {
 			key := &serviceQueueKey{
 				Namespace:    namespace,
