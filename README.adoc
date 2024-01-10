@@ -128,7 +128,77 @@ go build -o a.out cmd/greetings/*.go
 # ./a.out
 ----
 
-== Map
+== Data Struct
+
+=== simple map
+
+[source, go]
+----
+    processedResources := make(map[string]bool)
+
+    processedResources["foo.yaml"] = true
+    processedResources["bar.yaml"] = false
+    processedResources["zoo.yaml"] = false
+
+    for key, value := range processedResources {
+        fmt.Printf("%s: %v\n", key, value)
+    }
+
+    fmt.Println(processedResources["zoo.yaml"])
+
+    value, exists := processedResources["coo.yaml"]
+    if exists {
+        fmt.Printf("coo.yaml: %v\n", value)
+    } else {
+        fmt.Println("coo.yaml not exist")
+    }
+----
+
+=== simple struct
+
+[source, go]
+----
+type WatchedNamespaces struct {
+    Namespaces     []string
+    NamespaceLabel string
+}
+
+func main() {
+    watchedNamespaces := WatchedNamespaces{
+        Namespaces:     []string{"namespace1", "namespace2"},
+        NamespaceLabel: "watched",
+    }
+
+    fmt.Println(watchedNamespaces.Namespaces)
+    fmt.Println(watchedNamespaces.NamespaceLabel)
+}
+----
+
+=== struct with func field
+
+Using a Go struct with a function field offers flexibility and allows you to encapsulate behavior within the struct while enabling dynamic customization.
+
+[source, go]
+.*Example*
+----
+type Manager struct {
+    queueLen            int
+    processAgentLabels  func(map[string]string, string, string) bool
+}
+
+func customProcessAgentLabels(labels map[string]string, namespace string, name string) bool {
+    fmt.Printf("Custom Processing Agent Labels: %v, Namespace: %s, Name: %s\n", labels, namespace, name)
+    return true
+}
+
+func main() {
+    appMgr := Manager{
+        queueLen:           10,
+        processAgentLabels: customProcessAgentLabels,
+    }
+    appMgr.processAgentLabels(map[string]string{"key": "value"}, "exampleNamespace", "exampleName")
+}
+----
 
 == Multi-threads
 
