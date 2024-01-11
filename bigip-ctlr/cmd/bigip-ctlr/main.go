@@ -33,6 +33,8 @@ import (
 	clog "github.com/kylinsoong/bigip-ctlr/pkg/vlogger/console"
 	"github.com/kylinsoong/bigip-ctlr/pkg/vxlan"
 	"github.com/kylinsoong/bigip-ctlr/pkg/writer"
+
+	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 )
 
 type globalSection struct {
@@ -715,6 +717,11 @@ func getk8sVersion() string {
 
 func main() {
 
+	defer func() {
+		if r := recover(); r != nil {
+			return
+		}
+	}()
 	err := flags.Parse(os.Args)
 	if nil != err {
 		os.Exit(1)
@@ -725,20 +732,49 @@ func main() {
 		os.Exit(0)
 	}
 
-	*logLevel = strings.ToUpper(*logLevel)
-	initLogger(*logLevel)
-
-	if len(*namespaces) == 0 && len(*namespaceLabel) == 0 {
-		watchAllNamespaces = true
-	} else {
-		watchAllNamespaces = false
+	err = verifyArgs()
+	if nil != err {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		flags.Usage()
+		os.Exit(1)
+	}
+	err = getCredentials()
+	if nil != err {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		flags.Usage()
+		os.Exit(1)
 	}
 
-	isNodePort = false
+	log.Infof("[INIT] Starting: Container Ingress Services - Version: %s, BuildInfo: %s", version, buildInfo)
 
-	log.Infof("[INIT] Starting: K8S CLIENT TEST")
+	resource.DEFAULT_PARTITION = (*bigIPPartitions)[0]
+	dgPath = resource.DEFAULT_PARTITION
+	if strings.ToLower(*agent) == "as3" {
+		*agent = "as3"
+		dgPath = strings.Join([]string{resource.DEFAULT_PARTITION, "Shared"}, "/")
+	}
+	appmanager.RegisterBigIPSchemaTypes()
 
-	log.Infof("[INIT] logLevel: %s, inCluster: %t, kubeConfig: %s", *logLevel, *inCluster, *kubeConfig)
+	// If running with Flannel, create an event channel that the appManager
+	// uses to send endpoints to the VxlanManager
+	if len(*flannelName) > 0 {
+		eventChan = make(chan interface{})
+	}
+
+	// If running in VXLAN mode, extract the partition name from the tunnel
+	// to be used in configuring a net instance of CCCL for that partition
+	var vxlanPartition string
+	if len(vxlanName) > 0 {
+		cleanPath := strings.TrimLeft(vxlanName, "/")
+		slashPos := strings.Index(cleanPath, "/")
+		if slashPos == -1 {
+			// No partition
+			vxlanPartition = "Common"
+		} else {
+			// Partition and name
+			vxlanPartition = cleanPath[:slashPos]
+		}
+	}
 
 	config, err := getKubeConfig()
 	if err != nil {
@@ -750,7 +786,6 @@ func main() {
 		log.Fatalf("[INIT] error connecting to the client: %v", err)
 		os.Exit(1)
 	}
-
 	td := &teem.TeemsData{
 		CisVersion:      version,
 		Agent:           *agent,
@@ -774,15 +809,134 @@ func main() {
 		},
 	}
 
+	if !(*disableTeems) {
+		if isNodePort {
+			td.SDNType = "nodeport-mode"
+		} else {
+			if len(*openshiftSDNName) > 0 {
+				td.SDNType = "openshiftSDN"
+			} else if len(*flannelName) > 0 {
+				td.SDNType = "flannel"
+			} else {
+				td.SDNType = "calico"
+			}
+		}
+
+		// Post telemetry data request
+		//if !td.PostTeemsData() {
+		//      td.AccessEnabled = false
+		//      log.Error("Unable to post data to TEEM server. Restart CIS once firewall rules permit")
+		//}
+	} else {
+		td.AccessEnabled = false
+		log.Debug("Telemetry data reporting to TEEM server is disabled")
+	}
+	/*
+		if *customResourceMode || *controllerMode != "" {
+			getGTMCredentials()
+			ctlr := initController(config)
+			ctlr.TeemData = td
+			if !(*disableTeems) {
+				key, err := ctlr.Agent.GetBigipRegKey()
+				if err != nil {
+					log.Errorf("%v", err)
+				}
+				ctlr.TeemData.Lock()
+				ctlr.TeemData.RegistrationKey = key
+				ctlr.TeemData.Unlock()
+			}
+			err = ctlr.Agent.GetBigipAS3Version()
+			if err != nil {
+				log.Errorf("%v", err)
+				ctlr.Stop()
+				os.Exit(1)
+			}
+			sigs := make(chan os.Signal, 1)
+			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+			sig := <-sigs
+			ctlr.Stop()
+			log.Infof("Exiting - signal %v\n", sig)
+			return
+		}
+	*/
+
+	// When CIS configured as AS3 agent disable LTM in globalSection
+	disableLTM := false
+	if *agent == cisAgent.AS3Agent {
+		disableLTM = true
+	}
+	// When CIS configured in OCP cluster mode disable ARP in globalSection
+	disableARP := false
+	if *openshiftSDNName != "" {
+		disableARP = true
+	}
+
+	gs := globalSection{
+		LogLevel:       *logLevel,
+		VerifyInterval: *verifyInterval,
+		VXLANPartition: vxlanPartition,
+		DisableLTM:     disableLTM,
+		DisableARP:     disableARP,
+	}
+	if *ccclLogLevel != "" {
+		gs.LogLevel = *ccclLogLevel
+	}
+
+	/*
+		bs := bigIPSection{
+			BigIPUsername:   *bigIPUsername,
+			BigIPPassword:   *bigIPPassword,
+			BigIPURL:        *bigIPURL,
+			BigIPPartitions: *bigIPPartitions,
+		}
+
+			subPidCh, err := startPythonDriver(getConfigWriter(), gs, bs, *pythonBaseDir)
+			if nil != err {
+				log.Fatalf("Could not initialize subprocess configuration: %v", err)
+			}
+			subPid := <-subPidCh
+			defer func(pid int) {
+				if 0 != pid {
+					var proc *os.Process
+					proc, err = os.FindProcess(pid)
+					if nil != err {
+						log.Warningf("Failed to find sub-process on exit: %v", err)
+					}
+					err = proc.Signal(os.Interrupt)
+					if nil != err {
+						log.Warningf("Could not stop sub-process on exit: %d - %v", pid, err)
+					}
+				}
+			}(subPid)
+	*/
+
+	if _, isSet := os.LookupEnv("SCALE_PERF_ENABLE"); isSet {
+		now := time.Now()
+		log.Infof("[INIT] SCALE_PERF: Started controller at: %d", now.Unix())
+	}
+
+	if len(*routeLabel) > 0 {
+		*routeLabel = fmt.Sprintf("f5type in (%s)", *routeLabel)
+	}
+
 	agRspChan = make(chan interface{}, 1)
 	var appMgrParms = getAppManagerParams()
 
+	// creates the clientset
 	appMgrParms.KubeClient = kubeClient
+	if *manageRoutes {
+		var rclient *routeclient.RouteV1Client
+		rclient, err = routeclient.NewForConfig(config)
+		if nil != err {
+			log.Fatalf("[INIT] unable to create route client: err: %+v\n", err)
+		}
+		appMgrParms.RouteClientV1 = rclient
+	}
 
 	appMgr := appmanager.NewManager(&appMgrParms)
-
 	GetNamespaces(appMgr)
 
+	// Agent Initialization
 	log.Infof("[INIT] Creating Agent for %v", *agent)
 	appMgr.AgentCIS, err = cisAgent.CreateAgent(*agent)
 	if err != nil {
@@ -790,38 +944,62 @@ func main() {
 		os.Exit(1)
 	}
 
-	appMgr.TeemData = td
+	if err = appMgr.AgentCIS.Init(getAgentParams(*agent)); err != nil {
+		log.Fatalf("[INIT] Failed to initialize %v agent, %+v\n", *agent, err)
+		os.Exit(1)
+	}
+	defer appMgr.AgentCIS.DeInit()
+
+	if *filterTenants {
+		appMgr.AgentCIS.Clean(resource.DEFAULT_PARTITION)
+	}
 	appMgr.K8sVersion = getk8sVersion()
-
-	log.Infof("[INIT] kubernetes version %s", appMgr.K8sVersion)
-
+	if *agent == cisAgent.AS3Agent && !(*disableTeems) {
+		key := appMgr.AgentCIS.GetBigipRegKey()
+		td.RegistrationKey = key
+	}
+	appMgr.TeemData = td
+	GetNamespaces(appMgr)
 	intervalFactor := time.Duration(*nodePollInterval)
-	log.Infof("---> Setup node poller, nodePollInterval: %d", *nodePollInterval)
+	log.Infof("pollers NewNodePoller, nodePollInterval: %d, intervalFactor: %d", *nodePollInterval, intervalFactor)
 	np := pollers.NewNodePoller(appMgrParms.KubeClient, intervalFactor*time.Second, *nodeLabelSelector)
 	err = setupNodePolling(appMgr, np, eventChan, appMgrParms.KubeClient)
 	if nil != err {
-		log.Fatalf("Required polling utility for node updates failed setup: %v", err)
+		log.Fatalf("Required polling utility for node updates failed setup: %v",
+			err)
 	}
 
 	np.Run()
 	defer np.Stop()
 
-	log.Infof("---> Setup watchers, syncInterval: %d", *syncInterval)
+	log.Infof("setup watchers, syncInterval: %d", *syncInterval)
 	setupWatchers(appMgr, time.Duration(*syncInterval)*time.Second)
+	/*
+		// Expose Prometheus metrics
+		http.Handle("/metrics", promhttp.Handler())
+		// Add health check e.g. is Python process still there?
+		hc := &health.HealthChecker{
+			SubPID: subPid,
+		}
+		http.Handle("/health", hc.HealthCheckHandler())
+		bigIPPrometheus.RegisterMetrics()
+		go func() {
+			log.Fatal(http.ListenAndServe(*httpAddress, nil).Error())
+		}()
 
+		log.Infof("Started /metrics and /health service")
+	*/
 	stopCh := make(chan struct{})
 
-	log.Infof("---> appMgr run")
+	log.Infof("appMgr run")
 	appMgr.Run(stopCh)
 
-	log.Infof("---> signal process")
+	log.Infof("signal process")
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-sigs
 	close(stopCh)
 	log.Infof("[INIT] Exiting - signal %v\n", sig)
-	//fmt.Printf("%+v\n", appMgr)
-
 }
 
 func getConfigWriter() writer.Writer {

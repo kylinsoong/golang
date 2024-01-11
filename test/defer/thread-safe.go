@@ -13,7 +13,7 @@ type Counter struct {
 
 func (c *Counter) increment() {
     c.mu.Lock()
-    defer c.mu.Unlock() // Unlock the mutex when the function exits
+    defer c.mu.Unlock() 
     c.value++
 }
 

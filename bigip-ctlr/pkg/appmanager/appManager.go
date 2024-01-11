@@ -1087,11 +1087,11 @@ func (appMgr *Manager) startAndSyncAppInformers() {
 func (appMgr *Manager) startAppInformersLocked() {
 	for _, appInf := range appMgr.appInformers {
 		appInf.start()
-		log.Infof("---> appMgr start app informer %v", appInf)
+		log.Infof("---> appMgr start app informer for namespace %s", appInf.namespace)
 	}
 	if nil != appMgr.as3Informer {
 		appMgr.as3Informer.start()
-		log.Infof("---> appMgr start as3 infomer %v", appMgr.as3Informer)
+		log.Infof("---> appMgr start as3 infomer %s", appMgr.as3Informer.namespace)
 	}
 }
 
@@ -1104,9 +1104,11 @@ func (appMgr *Manager) waitForCacheSync() {
 func (appMgr *Manager) waitForCacheSyncLocked() {
 	for _, appInf := range appMgr.appInformers {
 		appInf.waitForCacheSync()
+		log.Infof("---> appMgr sync app informer for namespace %s", appInf.namespace)
 	}
 	if nil != appMgr.as3Informer {
 		appMgr.as3Informer.waitForCacheSync()
+		log.Infof("---> appMgr sync as3 infomer %s", appMgr.as3Informer.namespace)
 	}
 }
 
