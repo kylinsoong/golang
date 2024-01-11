@@ -179,7 +179,6 @@ func main() {
 Using a Go struct with a function field offers flexibility and allows you to encapsulate behavior within the struct while enabling dynamic customization.
 
 [source, go]
-.*Example*
 ----
 type Manager struct {
     queueLen            int
@@ -200,6 +199,10 @@ func main() {
 }
 ----
 
+== Fundamentals
+
+TODO--
+
 == Multi-threads
 
 === goroutine
@@ -207,13 +210,12 @@ func main() {
 The goroutine is a lightweight thread of execution managed by the Go runtime. Goroutines enable concurrent programming in a way that is more efficient and scalable compared to traditional threads.
 
 [source, go]
-.*Example*
 ----
 package main
 
 import (
-	"fmt"
-	"time"
+        "fmt"
+        "time"
 )
 
 func printNumbers() {
@@ -230,5 +232,139 @@ func main() {
         time.Sleep(100 * time.Millisecond)
         fmt.Printf("A%d \n", i)
     }
+}
+----
+
+=== channel: communication and synchronization between goroutines
+
+In Go, channels are a powerful mechanism for communication and synchronization between goroutines. They provide a way for one goroutine to send data to another goroutine. 
+
+[source, go]
+----
+func numberGenerator(ch chan int, wg *sync.WaitGroup) {
+    defer wg.Done()
+    for i := 1; i <= 5; i++ {
+        ch <- i // Send numbers 1 to 5 to the channel
+    }
+    close(ch) // Close the channel to signal no more data will be sent
+}
+
+func squareCalculator(ch chan int, resultCh chan int, wg *sync.WaitGroup) {
+    defer wg.Done()
+    for num := range ch {
+        square := num * num
+        resultCh <- square // Send squared result to the resultCh channel
+    }
+    close(resultCh) // Close the resultCh channel to signal no more results will be sent
+}
+
+func resultPrinter(resultCh chan int, wg *sync.WaitGroup) {
+    defer wg.Done()
+    for result := range resultCh {
+        fmt.Println("Squared Result:", result)
+    }
+}
+
+func main() {
+    numberCh := make(chan int)
+    resultCh := make(chan int)
+    var wg sync.WaitGroup
+    wg.Add(3)
+    go numberGenerator(numberCh, &wg)
+    go squareCalculator(numberCh, resultCh, &wg)
+    go resultPrinter(resultCh, &wg)
+    wg.Wait()
+}
+----
+
+=== channel: signal completion of sub goroutine
+
+[source, go]
+----
+func worker(ch chan struct{}) {
+    fmt.Println("Worker is starting...")
+    time.Sleep(2 * time.Second)
+    fmt.Println("Worker is done!")
+    ch <- struct{}{}
+}
+
+func main() {
+    doneCh := make(chan struct{})
+    go worker(doneCh)
+    <-doneCh
+    fmt.Println("Main function exiting.")
+}
+----
+
+=== using signal to control application interruptiong and termination
+
+In Go, the `os/signal` package provides a way to intercept signals sent to the program, such as termination signals (SIGINT for interrupt and SIGTERM for terminate). The signal usually wrapped with a channel that can be used to control application interruptiong and termination.
+
+[source, go]
+----
+func main() {
+    fmt.Println("Started to run tasks...")
+    signals := make(chan os.Signal, 1)
+    signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+    sig := <-signals
+    fmt.Printf("Received signal: %v\n", sig)
+}
+----
+
+=== defer statements a Last In, First Out (LIFO)  execution order
+
+[source, go]
+----
+func main() {
+    defer fmt.Println("This will be executed third.")
+    defer fmt.Println("This will be executed second.")
+    defer fmt.Println("This will be executed first.")
+    fmt.Println("Hello, Go!")
+}
+----
+
+=== thread-safe via defer and sync
+
+[source, go]
+----
+type Counter struct {
+    value int
+    mu    sync.Mutex
+}
+
+func (c *Counter) increment() {
+    c.mu.Lock()
+    defer c.mu.Unlock() 
+    c.value++
+}
+
+func (c *Counter) getValue() int {
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    return c.value
+}
+----
+
+== K8S
+
+=== k8s.io/apimachinery/pkg/util/wait
+
+The `k8s.io/apimachinery/pkg/util/wait` provides utilities for waiting and timing operations. Specifically, `wait.Until` is a function that repeatedly calls a provided function until the stop channel is closed or a timeout is reached.
+
+[source, go]
+.*wait.Until*
+----
+func exampleWork() {
+    fmt.Println("Doing some work...")
+    time.Sleep(2 * time.Second)
+}
+
+func main() {
+    stopCh := make(chan struct{})
+    go wait.Until(exampleWork, time.Second, stopCh)
+    time.Sleep(5 * time.Second)
+    close(stopCh)
+    time.Sleep(1 * time.Second)
+    fmt.Println("Main goroutine exiting...")
 }
 ----
