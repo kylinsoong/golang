@@ -4,5 +4,5 @@
 ----
 go mod init github.com/kylinsoong/bigip-ctlr
 go mod tidy
-go run cmd/bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=192.168.200.204 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/src/golang/bigip-ctlr/config --namespace=f5-hub-1 --namespace=f5-hub-2 --node-poll-interval=60 --periodic-sync-interval=36000 --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true
+go run cmd/bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=10.155.223.10 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/src/golang/bigip-ctlr/config --namespace=f5-hub-1 --namespace=f5-hub-2 --node-poll-interval=60 --periodic-sync-interval=36000 --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/src/golang/bigip-ctlr/schemas/
 ----

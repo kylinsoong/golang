@@ -22,8 +22,8 @@ import (
 	"strconv"
 	"strings"
 
+	. "github.com/kylinsoong/bigip-ctlr/pkg/resource"
 	log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
-        . "github.com/kylinsoong/bigip-ctlr/pkg/resource"
 
 	routeapi "github.com/openshift/api/route/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -334,11 +334,8 @@ func (appMgr *Manager) handleIngressTls(
 				secret := appMgr.rsrcSSLCtxt[tls.SecretName]
 				if secret == nil {
 					// No secret, so we assume the profile is a BIG-IP default
-					log.Debugf("[CORE] No Secret with name '%s' in namespace '%s', "+
-						"parsing secretName as path instead.",
-						tls.SecretName, ing.ObjectMeta.Namespace)
-					profRef := ConvertStringToProfileRef(
-						tls.SecretName, CustomProfileClient, ing.ObjectMeta.Namespace)
+					log.Debugf("[CORE] No Secret with name '%s' in namespace '%s', parsing secretName as path instead.", tls.SecretName, ing.ObjectMeta.Namespace)
+					profRef := ConvertStringToProfileRef(tls.SecretName, CustomProfileClient, ing.ObjectMeta.Namespace)
 					rsCfg.Virtual.AddOrUpdateProfile(profRef)
 					continue
 				}
@@ -358,26 +355,22 @@ func (appMgr *Manager) handleIngressTls(
 				rsCfg.Virtual.AddOrUpdateProfile(profRef)
 			} else {
 				secretName := FormatIngressSslProfileName(tls.SecretName)
-				profRef := ConvertStringToProfileRef(
-					secretName, CustomProfileClient, ing.ObjectMeta.Namespace)
+				profRef := ConvertStringToProfileRef(secretName, CustomProfileClient, ing.ObjectMeta.Namespace)
 				rsCfg.Virtual.AddOrUpdateProfile(profRef)
 			}
 		}
 		if serverProfile, ok :=
 			ing.ObjectMeta.Annotations[F5ServerSslProfileAnnotation]; ok == true {
 			secretName := FormatIngressSslProfileName(serverProfile)
-			profRef := ConvertStringToProfileRef(
-				secretName, CustomProfileServer, ing.ObjectMeta.Namespace)
+			profRef := ConvertStringToProfileRef(secretName, CustomProfileServer, ing.ObjectMeta.Namespace)
 			rsCfg.Virtual.AddOrUpdateProfile(profRef)
 		}
 		return cpUpdated
 	}
 
 	// sslRedirect defaults to true, allowHttp defaults to false.
-	sslRedirect := getBooleanAnnotation(ing.ObjectMeta.Annotations,
-		IngressSslRedirect, true)
-	allowHttp := getBooleanAnnotation(ing.ObjectMeta.Annotations,
-		IngressAllowHttp, false)
+	sslRedirect := getBooleanAnnotation(ing.ObjectMeta.Annotations, IngressSslRedirect, true)
+	allowHttp := getBooleanAnnotation(ing.ObjectMeta.Annotations, IngressAllowHttp, false)
 	// -----------------------------------------------------------------
 	// | State | sslRedirect | allowHttp | Description                 |
 	// -----------------------------------------------------------------
@@ -590,8 +583,7 @@ func (appMgr *Manager) handleRouteRules(
 	if protocol == "http" {
 		if nil == tls || len(tls.Termination) == 0 {
 			if abDeployment {
-				appMgr.addIRule(
-					AbDeploymentPathIRuleName, DEFAULT_PARTITION, appMgr.abDeploymentPathIRule())
+				appMgr.addIRule(AbDeploymentPathIRuleName, DEFAULT_PARTITION, appMgr.abDeploymentPathIRule())
 				appMgr.addInternalDataGroup(AbDeploymentDgName, DEFAULT_PARTITION)
 				rc.Virtual.AddIRule(abPathIRuleName)
 			} else {
@@ -612,10 +604,8 @@ func (appMgr *Manager) handleRouteRules(
 						SetAnnotationRulesForRoute(policyName, urlRewriteRule, appRootRules, rc, false)
 					}
 				case routeapi.InsecureEdgeTerminationPolicyRedirect:
-					redirectIRuleName := JoinBigipPath(DEFAULT_PARTITION,
-						HttpRedirectIRuleName)
-					appMgr.addIRule(HttpRedirectIRuleName, DEFAULT_PARTITION,
-						httpRedirectIRule(DEFAULT_HTTPS_PORT, DEFAULT_PARTITION, appMgr.TeemData.Agent))
+					redirectIRuleName := JoinBigipPath(DEFAULT_PARTITION, HttpRedirectIRuleName)
+					appMgr.addIRule(HttpRedirectIRuleName, DEFAULT_PARTITION, httpRedirectIRule(DEFAULT_HTTPS_PORT, DEFAULT_PARTITION, appMgr.TeemData.Agent))
 					appMgr.addInternalDataGroup(HttpsRedirectDgName, DEFAULT_PARTITION)
 					rc.Virtual.AddIRule(redirectIRuleName)
 					// TLS config indicates to forward http to https.
@@ -623,8 +613,7 @@ func (appMgr *Manager) handleRouteRules(
 					if route.Spec.Path != "" {
 						path = route.Spec.Path
 					}
-					svcFwdRulesMap.AddEntry(route.ObjectMeta.Namespace, route.Spec.To.Name,
-						route.Spec.Host, path)
+					svcFwdRulesMap.AddEntry(route.ObjectMeta.Namespace, route.Spec.To.Name, route.Spec.Host, path)
 					rc.AddRuleToPolicy(policyName, rule)
 					SetAnnotationRulesForRoute(policyName, urlRewriteRule, appRootRules, rc, true)
 				}
@@ -633,18 +622,15 @@ func (appMgr *Manager) handleRouteRules(
 	} else {
 		// https
 		if nil != tls {
-			passThroughIRuleName := JoinBigipPath(DEFAULT_PARTITION,
-				SslPassthroughIRuleName)
+			passThroughIRuleName := JoinBigipPath(DEFAULT_PARTITION, SslPassthroughIRuleName)
 			switch tls.Termination {
 			case routeapi.TLSTerminationEdge:
 				if abDeployment {
-					appMgr.addIRule(
-						AbDeploymentPathIRuleName, DEFAULT_PARTITION, appMgr.abDeploymentPathIRule())
+					appMgr.addIRule(AbDeploymentPathIRuleName, DEFAULT_PARTITION, appMgr.abDeploymentPathIRule())
 					appMgr.addInternalDataGroup(AbDeploymentDgName, DEFAULT_PARTITION)
 					rc.Virtual.AddIRule(abPathIRuleName)
 				} else {
-					appMgr.addIRule(
-						SslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
+					appMgr.addIRule(SslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
 					appMgr.addInternalDataGroup(EdgeHostsDgName, DEFAULT_PARTITION)
 					appMgr.addInternalDataGroup(EdgeServerSslDgName, DEFAULT_PARTITION)
 					rc.Virtual.AddIRule(passThroughIRuleName)
@@ -652,13 +638,11 @@ func (appMgr *Manager) handleRouteRules(
 					SetAnnotationRulesForRoute(policyName, urlRewriteRule, appRootRules, rc, false)
 				}
 			case routeapi.TLSTerminationPassthrough:
-				appMgr.addIRule(
-					SslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
+				appMgr.addIRule(SslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
 				appMgr.addInternalDataGroup(PassthroughHostsDgName, DEFAULT_PARTITION)
 				rc.Virtual.AddIRule(passThroughIRuleName)
 			case routeapi.TLSTerminationReencrypt:
-				appMgr.addIRule(
-					SslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
+				appMgr.addIRule(SslPassthroughIRuleName, DEFAULT_PARTITION, appMgr.sslPassthroughIRule())
 				appMgr.addInternalDataGroup(ReencryptHostsDgName, DEFAULT_PARTITION)
 				appMgr.addInternalDataGroup(ReencryptServerSslDgName, DEFAULT_PARTITION)
 				rc.Virtual.AddIRule(passThroughIRuleName)

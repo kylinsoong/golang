@@ -46,7 +46,7 @@ func (ag *agentAS3) Deploy(req interface{}) error {
 }
 
 func (ag *agentAS3) Clean(partition string) error {
-	log.Debugf("[AS3] Cleaning Partition %v \n", partition)
+	log.Debugf("[AS3] Cleaning Partition %v", partition)
 	ag.CleanAS3Tenant(partition)
 	return nil
 }

@@ -651,8 +651,7 @@ func (am *AS3Manager) IsBigIPAppServicesAvailable() error {
 		return nil
 	}
 
-	return fmt.Errorf("CIS versions >= 2.0 are compatible with AS3 versions >= %v. "+
-		"Upgrade AS3 version in BIGIP from %v to %v or above.", as3SupportedVersion,
+	return fmt.Errorf("CIS versions >= 2.0 are compatible with AS3 versions >= %v. Upgrade AS3 version in BIGIP from %v to %v or above.", as3SupportedVersion,
 		bigIPAS3Version, as3SupportedVersion)
 }
 

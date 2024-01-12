@@ -492,9 +492,7 @@ const AppRootDep = "App-Root-Annotation"
 const WhitelistDep = "Whitelist-Annotation"
 
 // NewObjectDependencies parses an object and returns a map of its dependencies
-func NewObjectDependencies(
-	obj interface{},
-) (ObjectDependency, ObjectDependencies) {
+func NewObjectDependencies(obj interface{}) (ObjectDependency, ObjectDependencies) {
 	var key ObjectDependency
 	deps := make(ObjectDependencies)
 	switch t := obj.(type) {
@@ -2616,13 +2614,8 @@ func NewCustomProfile(
 
 // GetServicePort returns the port number, for a given port name,
 // else, returns the first port found for a Route's service.
-func GetServicePort(
-	ns string,
-	svcName string,
-	svcIndexer cache.Indexer,
-	portName string,
-	rscType string,
-) (int32, error) {
+func GetServicePort(ns string, svcName string, svcIndexer cache.Indexer, portName string, rscType string) (int32, error) {
+
 	key := ns + "/" + svcName
 
 	obj, found, err := svcIndexer.GetByKey(key)
@@ -2637,8 +2630,7 @@ func GetServicePort(
 					return port.Port, nil
 				}
 			}
-			return 0,
-				fmt.Errorf("Could not find service port '%s' on service '%s'", portName, key)
+			return 0, fmt.Errorf("Could not find service port '%s' on service '%s'", portName, key)
 		} else if rscType == ResourceTypeRoute {
 			return svc.Spec.Ports[0].Port, nil
 		}
