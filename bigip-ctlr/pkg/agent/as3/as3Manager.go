@@ -181,8 +181,7 @@ func NewAS3Manager(params *Params) *AS3Manager {
 		defaultRouteDomain:        params.DefaultRouteDomain,
 		poolMemberType:            params.PoolMemberType,
 		as3ActiveConfig:           AS3Config{tenantMap: make(map[string]interface{})},
-		l2l3Agent: L2L3Agent{eventChan: params.EventChan,
-			configWriter: params.ConfigWriter},
+		l2l3Agent:                 L2L3Agent{eventChan: params.EventChan, configWriter: params.ConfigWriter},
 		PostManager: NewPostManager(PostParams{
 			BIGIPUsername: params.BIGIPUsername,
 			BIGIPPassword: params.BIGIPPassword,

@@ -951,6 +951,7 @@ func main() {
 	defer appMgr.AgentCIS.DeInit()
 
 	if *filterTenants {
+		log.Debugf("[INIT] per tenant update enabled, execute clean %s partition operation", resource.DEFAULT_PARTITION)
 		appMgr.AgentCIS.Clean(resource.DEFAULT_PARTITION)
 	}
 	appMgr.K8sVersion = getk8sVersion()
@@ -965,8 +966,7 @@ func main() {
 	np := pollers.NewNodePoller(appMgrParms.KubeClient, intervalFactor*time.Second, *nodeLabelSelector)
 	err = setupNodePolling(appMgr, np, eventChan, appMgrParms.KubeClient)
 	if nil != err {
-		log.Fatalf("Required polling utility for node updates failed setup: %v",
-			err)
+		log.Fatalf("Required polling utility for node updates failed setup: %v", err)
 	}
 
 	np.Run()

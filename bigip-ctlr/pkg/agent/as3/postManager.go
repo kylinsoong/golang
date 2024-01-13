@@ -192,8 +192,7 @@ func (postMgr *PostManager) GetBigipAS3Version() (string, string, string, error)
 	case http.StatusNotFound:
 		responseMap["code"] = int(responseMap["code"].(float64))
 		if responseMap["code"] == http.StatusNotFound {
-			return "", "", "", fmt.Errorf("AS3 RPM is not installed on BIGIP,"+
-				" Error response from BIGIP with status code %v", httpResp.StatusCode)
+			return "", "", "", fmt.Errorf("AS3 RPM is not installed on BIGIP, Error response from BIGIP with status code %v", httpResp.StatusCode)
 		}
 		// In case of 503 status code : CIS will exit and auto restart of the
 		// controller might fetch the BIGIP version once BIGIP is available.
@@ -264,7 +263,7 @@ func (postMgr *PostManager) handleResponseStatusOK(responseMap map[string]interf
 	for _, value := range results {
 		v := value.(map[string]interface{})
 		//log result with code, tenant and message
-		log.Debugf("[AS3] Response from BIG-IP: code: %v --- tenant:%v --- message: %v", v["code"], v["tenant"], v["message"])
+		log.Debugf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
 	}
 	return true, responseStatusOk
 }
