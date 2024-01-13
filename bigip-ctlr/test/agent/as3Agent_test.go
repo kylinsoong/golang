@@ -23,6 +23,8 @@ import (
 
 	cisAgent "github.com/kylinsoong/bigip-ctlr/pkg/agent"
 	"github.com/kylinsoong/bigip-ctlr/pkg/appmanager"
+	. "github.com/kylinsoong/bigip-ctlr/pkg/resource"
+	"github.com/kylinsoong/bigip-ctlr/test"
 )
 
 var (
@@ -31,11 +33,19 @@ var (
 )
 
 type (
+	as3Template        string
 	as3Declaration     string
+	as3ADC             as3JSONWithArbKeys
 	as3Control         as3JSONWithArbKeys
 	as3Tenant          as3JSONWithArbKeys
 	as3Application     as3JSONWithArbKeys
 	as3JSONWithArbKeys map[string]interface{}
+
+	poolName   string
+	appName    string
+	tenantName string
+	tenant     map[appName][]poolName
+	as3Object  map[tenantName]tenant
 )
 
 type config struct {
@@ -313,4 +323,267 @@ func TestGetBigipRegKey(t *testing.T) {
 		registrationKey := responseMap["registrationKey"].(string)
 		t.Logf("registrationKey: %s", registrationKey)
 	}
+}
+
+type AS3Config struct {
+	resourceConfig        as3ADC
+	configmaps            []*AS3ConfigMap
+	overrideConfigmapData string
+	tenantMap             map[string]interface{}
+	unifiedDeclaration    as3Declaration
+}
+
+type AS3ConfigMap struct {
+	Name      string   // AS3 specific ConfigMap name
+	Namespace string   // AS3 specific ConfigMap namespace
+	config    as3ADC   // if AS3 Name is present, populate this with AS3 template data.
+	endPoints []Member // Endpoints of all the pools in the configmap
+	Validated bool     // Json Schema validated ok
+}
+
+func generateAS3ResourceDeclaration() as3ADC {
+
+	app := as3Application{}
+	app["class"] = "Application"
+	app["template"] = "shared"
+
+	tnt := as3Tenant{}
+	tnt["class"] = "Tenant"
+	tnt["Shared"] = app
+	tnt["defaultRouteDomain"] = 0
+
+	adc := as3ADC{}
+	adc["k8s"] = tnt
+
+	return adc
+}
+
+func prepareAS3ResourceConfig() as3ADC {
+
+	adc := generateAS3ResourceDeclaration()
+	controlObj := make(as3Control)
+	controlObj["class"] = "Controls"
+	controlObj["userAgent"] = "CIS/v K8S/v 1.23.10"
+	adc["controls"] = controlObj
+
+	return adc
+}
+
+func assertToBe(kind string, obj interface{}) bool {
+	if obj == nil {
+		return false
+	}
+	return (reflect.TypeOf(obj).Kind().String() == kind)
+}
+
+func getClass(obj interface{}) string {
+	cfg, ok := obj.(map[string]interface{})
+	if !ok {
+		// If not a json object it doesn't have class attribute
+		return ""
+	}
+	cl, ok := cfg["class"]
+	if !ok {
+		fmt.Println("No class attribute found")
+		return ""
+	}
+	return cl.(string)
+}
+
+func getAS3ObjectFromTemplate(template as3Template) (as3Object, bool) {
+
+	var tmpl map[string]interface{}
+	err := json.Unmarshal([]byte(template), &tmpl)
+	if err != nil {
+		fmt.Errorf("[AS3] JSON unmarshal failed: %v  %v", err, template)
+		return nil, false
+	}
+
+	as3 := make(as3Object)
+	dclr := tmpl["declaration"]
+	if dclr == nil || !assertToBe("map", dclr) {
+		fmt.Println("[AS3] No ADC class declaration found or with wrong content.")
+		return nil, false
+	}
+
+	for tn, t := range dclr.(map[string]interface{}) {
+		if !assertToBe("map", t) {
+			continue
+		}
+		tnt := t.(map[string]interface{})
+		if tnt["class"] != "Tenant" {
+			continue
+		}
+		as3[tenantName(tn)] = make(tenant, 0)
+		for an, a := range t.(map[string]interface{}) {
+			if !assertToBe("map", a) {
+				continue
+			}
+			as3[tenantName(tn)][appName(an)] = []poolName{}
+			for pn, v := range a.(map[string]interface{}) {
+				if !assertToBe("map", v) {
+					continue
+				}
+				if cl := getClass(v); cl != "Pool" {
+					continue
+				}
+				mems := (v.(map[string]interface{}))["members"]
+				if mems == nil {
+					continue
+				}
+				if !assertToBe("slice", mems) || len(mems.([]interface{})) == 0 {
+					continue
+				}
+				if !assertToBe("map", (mems.([]interface{}))[0]) {
+					continue
+				}
+				mem0 := (mems.([]interface{}))[0].(map[string]interface{})
+				srvAddrs := mem0["serverAddresses"]
+				if srvAddrs == nil || len(srvAddrs.([]interface{})) != 0 {
+					continue
+				}
+				as3[tenantName(tn)][appName(an)] = append(
+					as3[tenantName(tn)][appName(an)],
+					poolName(pn),
+				)
+			}
+			if len(as3[tenantName(tn)][appName(an)]) == 0 {
+				fmt.Printf("[AS3] No pools declared for application: %s, tenant: %s\n", an, tn)
+			}
+		}
+	}
+	if len(as3) == 0 {
+		fmt.Println("[AS3] No tenants declared in AS3 template")
+		return as3, false
+	}
+	return as3, true
+}
+
+func GetAppEndpoints() []Member {
+
+	var members []Member
+
+	member1 := Member{
+		Address: "1.1.1.1",
+		Port:    8080,
+		SvcPort: 80,
+	}
+	member2 := Member{
+		Address: "1.1.1.2",
+		Port:    8080,
+		SvcPort: 80,
+	}
+
+	members = append(members, member1)
+	members = append(members, member2)
+
+	return members
+}
+
+func processCfgMap() (map[string]interface{}, []Member) {
+
+	data, err := test.LoadFileAsString("cm1.txt")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return nil, nil
+	}
+	as3Tmpl := as3Template(data)
+	obj, ok := getAS3ObjectFromTemplate(as3Tmpl)
+	if !ok {
+		fmt.Println("[AS3][Configmap] Error processing AS3 template")
+		fmt.Printf("[AS3]Error in processing the ConfigMap: %v/%v", "f5-hub-1", "cm-cistest")
+		return nil, nil
+	}
+
+	if _, ok := obj[tenantName(DEFAULT_PARTITION)]; ok {
+		fmt.Printf("[AS3] Error in processing the ConfigMap: %v/%v", "f5-hub-1", "cm-cistest")
+		fmt.Printf("[AS3] CIS managed partition <%s> should not be used in ConfigMaps as a Tenant", DEFAULT_PARTITION)
+		return nil, nil
+	}
+
+	var tmp interface{}
+
+	err = json.Unmarshal([]byte(as3Tmpl), &tmp)
+	if nil != err {
+		return nil, nil
+	}
+
+	templateJSON := tmp.(map[string]interface{})
+	dec := (templateJSON["declaration"]).(map[string]interface{})
+	tenantMap := make(map[string]interface{})
+	var members []Member
+
+	for tnt, apps := range obj {
+		tenantObj := dec[string(tnt)].(map[string]interface{})
+		tenantObj["defaultRouteDomain"] = 0
+		for app, pools := range apps {
+			appObj := tenantObj[string(app)].(map[string]interface{})
+			for _, pn := range pools {
+				poolObj := appObj[string(pn)].(map[string]interface{})
+				eps := GetAppEndpoints()
+				if len(eps) == 0 {
+					continue
+				}
+				poolMem := (((poolObj["members"]).([]interface{}))[0]).(map[string]interface{})
+				var ips []string
+				var port int32
+				for _, v := range eps {
+					if int(v.SvcPort) == int(poolMem["servicePort"].(float64)) {
+						ips = append(ips, v.Address)
+						members = append(members, v)
+						port = v.Port
+					}
+				}
+				if port == 0 {
+					ipMap := make(map[string]bool)
+					members = append(members, eps...)
+					for _, v := range eps {
+						if _, ok := ipMap[v.Address]; !ok {
+							ipMap[v.Address] = true
+							ips = append(ips, v.Address)
+						}
+					}
+					port = eps[0].Port
+				}
+				poolMem["serverAddresses"] = ips
+				poolMem["servicePort"] = port
+			}
+		}
+		tenantMap[string(tnt)] = tenantObj
+	}
+	return tenantMap, members
+}
+
+func prepareResourceAS3ConfigMaps() ([]*AS3ConfigMap, string) {
+
+	var as3Cfgmaps []*AS3ConfigMap
+	var overriderAS3CfgmapData string
+
+	cfgmap := &AS3ConfigMap{
+		Name:      "cm-cistest",
+		Namespace: "f5-hub-1",
+		Validated: true,
+	}
+
+	tenantMap, endPoints := processCfgMap(rscCfgMap)
+	if tenantMap == nil {
+		continue
+	}
+
+	return as3Cfgmaps, overriderAS3CfgmapData
+}
+
+func TestCreateFirstVSInCleanVEViaCM(t *testing.T) {
+
+	as3Config := &AS3Config{
+		tenantMap: make(map[string]interface{}),
+	}
+
+	// Process Route or Ingress
+	as3Config.resourceConfig = prepareAS3ResourceConfig()
+
+	// Process all Configmaps (including overrideAS3)
+	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps()
+
+	t.Logf("%v", as3Config)
 }
