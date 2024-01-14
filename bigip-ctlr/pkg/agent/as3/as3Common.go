@@ -610,11 +610,7 @@ func (am *AS3Manager) createUpdateTLSServer(prof CustomProfile, svcName string, 
 	return false
 }
 
-func createTLSClient(
-	prof CustomProfile,
-	svcName, caBundleName string,
-	sharedApp as3Application,
-) *as3TLSClient {
+func createTLSClient(prof CustomProfile, svcName, caBundleName string, sharedApp as3Application) *as3TLSClient {
 	// For TLSClient only Cert (DestinationCACertificate) is given and key is empty string
 	if "" != prof.Cert && "" == prof.Key {
 		svc := sharedApp[svcName].(*as3Service)

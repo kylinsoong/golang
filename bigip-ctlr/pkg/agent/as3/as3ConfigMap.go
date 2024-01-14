@@ -23,10 +23,8 @@ const (
 	StagingAS3Label  = "stagingAS3"
 )
 
-func (am *AS3Manager) prepareResourceAS3ConfigMaps() (
-	[]*AS3ConfigMap,
-	string,
-) {
+func (am *AS3Manager) prepareResourceAS3ConfigMaps() ([]*AS3ConfigMap, string) {
+
 	var as3Cfgmaps []*AS3ConfigMap
 	var overriderAS3CfgmapData string
 
@@ -123,24 +121,18 @@ func (am *AS3Manager) isValidConfigmap(cfgmap *AgentCfgMap) (string, bool) {
 
 // processCfgMap processes a configmap and feeds pool Members
 // and return a map of tenants and all endpoints
-func (am *AS3Manager) processCfgMap(rscCfgMap *AgentCfgMap) (
-	map[string]interface{},
-	[]Member,
-) {
+func (am *AS3Manager) processCfgMap(rscCfgMap *AgentCfgMap) (map[string]interface{}, []Member) {
 	as3Tmpl := as3Template(rscCfgMap.Data)
 	obj, ok := getAS3ObjectFromTemplate(as3Tmpl)
 	if !ok {
 		log.Errorf("[AS3][Configmap] Error processing AS3 template")
-		log.Errorf("[AS3]Error in processing the ConfigMap: %v/%v",
-			rscCfgMap.Namespace, rscCfgMap.Name)
+		log.Errorf("[AS3]Error in processing the ConfigMap: %v/%v", rscCfgMap.Namespace, rscCfgMap.Name)
 		return nil, nil
 	}
 
 	if _, ok := obj[tenantName(DEFAULT_PARTITION)]; ok {
-		log.Errorf("[AS3] Error in processing the ConfigMap: %v/%v",
-			rscCfgMap.Namespace, rscCfgMap.Name)
-		log.Errorf("[AS3] CIS managed partition <%s> should not be used in ConfigMaps as a Tenant",
-			DEFAULT_PARTITION)
+		log.Errorf("[AS3] Error in processing the ConfigMap: %v/%v", rscCfgMap.Namespace, rscCfgMap.Name)
+		log.Errorf("[AS3] CIS managed partition <%s> should not be used in ConfigMaps as a Tenant", DEFAULT_PARTITION)
 		return nil, nil
 	}
 

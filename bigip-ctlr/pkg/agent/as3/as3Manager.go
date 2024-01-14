@@ -318,7 +318,7 @@ func (am *AS3Manager) processFilterTenants(tempAS3Config AS3Config) (bool, strin
 			am.as3ActiveConfig.tenantMap[partition] = tempAS3Config.tenantMap[partition]
 			am.as3ActiveConfig.updateConfig(tempAS3Config)
 
-			log.Debugf("[AS3] Posting AS3 Declaration - processFilterTenants")
+			log.Debugf("[AS3] Posting AS3 Declaration - processFilterTenants, partition: %s, declaration: %s", partition, string(tenantDecl))
 			_, responseCode := am.PostManager.postConfigRequests(string(tenantDecl), am.PostManager.getAS3APIURL([]string{partition}))
 			responseStatusList[responseCode] = responseStatusList[responseCode] + 1
 
@@ -518,13 +518,13 @@ func (am *AS3Manager) getDeletedTenantsFromTenantMap(curTenantMap map[string]int
 
 // Method to delete AS3 partition using partition endpoint
 func (am *AS3Manager) DeleteAS3Tenant(partition string) (bool, string) {
-	log.Debugf("[AS3] Posting AS3 Declaration - DeleteAS3Tenant")
+	log.Debugf("[AS3] Posting AS3 Declaration - DeleteAS3Tenant, partition: %s", partition)
 	emptyAS3Declaration := am.getEmptyAs3Declaration(partition)
 	return am.PostManager.postConfigRequests(string(emptyAS3Declaration), am.PostManager.getAS3APIURL([]string{partition}))
 }
 
 func (am *AS3Manager) CleanAS3Tenant(partition string) (bool, string) {
-	log.Debugf("[AS3] Posting AS3 Declaration - CleanAS3Tenant")
+	log.Debugf("[AS3] Posting AS3 Declaration - CleanAS3Tenant, partition: %s", partition)
 	emptyAS3Declaration := am.getEmptyAs3DeclarationForCISManagedPartition(partition)
 	return am.PostManager.postConfigRequests(string(emptyAS3Declaration), am.PostManager.getAS3APIURL([]string{partition}))
 }
@@ -544,6 +544,7 @@ func (am *AS3Manager) ConfigDeployer() {
 	am.unprocessableEntityStatus = false
 	postDelayTimeout := time.Duration(am.PostManager.AS3PostDelay) * time.Second
 	for msgReq := range am.ReqChan {
+		log.Debugf("[AS3] Receive message from %v, ReqID: %d, MsgType: %s, ResourceRequest: %v", am.ReqChan, msgReq.ReqID, msgReq.MsgType, msgReq.ResourceRequest)
 		if !firstPost && am.PostManager.AS3PostDelay != 0 {
 			// Time (in seconds) that CIS waits to post the AS3 declaration to BIG-IP.
 			log.Debugf("[AS3] Delaying post to BIG-IP for %v seconds", am.PostManager.AS3PostDelay)
@@ -650,11 +651,13 @@ func (am *AS3Manager) IsBigIPAppServicesAvailable() error {
 		return nil
 	}
 
-	return fmt.Errorf("CIS versions >= 2.0 are compatible with AS3 versions >= %v. Upgrade AS3 version in BIGIP from %v to %v or above.", as3SupportedVersion,
-		bigIPAS3Version, as3SupportedVersion)
+	return fmt.Errorf("CIS versions >= 2.0 are compatible with AS3 versions >= %v. Upgrade AS3 version in BIGIP from %v to %v or above.", as3SupportedVersion, bigIPAS3Version, as3SupportedVersion)
 }
 
 func (am *AS3Manager) updateNetworkingConfig() {
+	if am.l2l3Agent.eventChan == nil {
+		return
+	}
 	log.Debugf("[AS3] Preparing response message to response handler for arp and fdb config")
 	am.SendARPEntries()
 	am.SendAgentResponse()

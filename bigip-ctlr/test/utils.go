@@ -8,7 +8,7 @@ import (
 )
 
 func LoadFileAsString(filename string) (string, error) {
-	fullPath := filepath.Join("configmaps", filename)
+	fullPath := filepath.Join("/Users/k.song/src/golang/bigip-ctlr/test/configmaps", filename)
 	if _, err := os.Stat(fullPath); err != nil {
 		if os.IsNotExist(err) {
 			return "", fmt.Errorf("file not found: %v", err)

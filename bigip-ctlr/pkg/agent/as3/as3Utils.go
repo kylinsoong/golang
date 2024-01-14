@@ -29,17 +29,17 @@ import (
 func ValidateJSONStringAndFetchObject(jsonData string, jsonObj *map[string]interface{}) error {
 
 	if jsonData == "" {
-		log.Errorf("[AS3] Empty JSON string passed as an input !!!")
+		log.Errorf("[AS3] Empty JSON string passed as an input !")
 		return fmt.Errorf("Empty Input JSON String")
 	}
 
 	if err := json.Unmarshal([]byte(jsonData), jsonObj); err != nil {
-		log.Errorf("[AS3] Failed in JSON Un-Marshal test !!!: %v", err)
+		log.Errorf("[AS3] Failed in JSON Un-Marshal test !: %v", err)
 		return err
 	}
 
 	if data, err := json.Marshal(*jsonObj); err != nil && string(data) != "" {
-		log.Errorf("[AS3] Failed in JSON Marshal test  !!!: %v", err)
+		log.Errorf("[AS3] Failed in JSON Marshal test  !: %v", err)
 		return err
 	}
 
@@ -50,13 +50,13 @@ func ValidateAndOverrideAS3JsonData(srcJsonData string, dstJsonData string) stri
 
 	var srcJsonObj map[string]interface{}
 	if err := ValidateJSONStringAndFetchObject(srcJsonData, &srcJsonObj); err != nil {
-		log.Errorf("[AS3] JSON Validation error on source JSON string !!!")
+		log.Errorf("[AS3] JSON Validation error on source JSON string !")
 		return ""
 	}
 
 	var dstJsonObj map[string]interface{}
 	if err := ValidateJSONStringAndFetchObject(dstJsonData, &dstJsonObj); err != nil {
-		log.Errorf("[AS3] JSON Validation error on destination JSON string !!!")
+		log.Errorf("[AS3] JSON Validation error on destination JSON string !")
 		return ""
 	}
 
@@ -65,7 +65,7 @@ func ValidateAndOverrideAS3JsonData(srcJsonData string, dstJsonData string) stri
 	dstDeclr := dstJsonObj["declaration"]
 	srcDeclr := srcJsonObj["declaration"]
 	if srcDeclr == nil {
-		log.Errorf("[AS3] Source JSON is not a valid AS3 declaration !!!")
+		log.Errorf("[AS3] Source JSON is not a valid AS3 declaration !")
 		return ""
 	}
 
@@ -82,7 +82,7 @@ func ValidateAndOverrideAS3JsonData(srcJsonData string, dstJsonData string) stri
 	// Return empty string if the Merged JSON config fails the Marshall test
 	mergedJsonData, err := json.Marshal(mergeRecursive(srcJsonObj, dstJsonObj))
 	if err != nil {
-		log.Errorf("[AS3] CIS failed to merge JSON config !!!: %v", err)
+		log.Errorf("[AS3] CIS failed to merge JSON config !: %v", err)
 		return ""
 	}
 	return string(mergedJsonData)
@@ -211,9 +211,7 @@ func getTenants(decl as3Declaration, includeEmptyTenant bool) []string {
 
 // getAS3ObjectFromTemplate gets an AS3 template as a input parameter.
 // It parses AS3 template, constructs an as3Object and returns it.
-func getAS3ObjectFromTemplate(
-	template as3Template,
-) (as3Object, bool) {
+func getAS3ObjectFromTemplate(template as3Template) (as3Object, bool) {
 	var tmpl map[string]interface{}
 	err := json.Unmarshal([]byte(template), &tmpl)
 	if err != nil {

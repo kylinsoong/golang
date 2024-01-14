@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -565,14 +566,62 @@ func prepareResourceAS3ConfigMaps() ([]*AS3ConfigMap, string) {
 		Validated: true,
 	}
 
-	tenantMap, endPoints := processCfgMap(rscCfgMap)
-	if tenantMap == nil {
-		continue
-	}
+	tenantMap, endPoints := processCfgMap()
+	cfgmap.config = tenantMap
+	cfgmap.endPoints = endPoints
+	as3Cfgmaps = append(as3Cfgmaps, cfgmap)
 
 	return as3Cfgmaps, overriderAS3CfgmapData
 }
 
+func updateTenantMap(tempAS3Config AS3Config) AS3Config {
+	// Parse as3Config.configmaps , extract all tenants and store in tenantMap.
+	for _, cm := range tempAS3Config.configmaps {
+		for tenantName, tenant := range cm.config {
+			tempAS3Config.tenantMap[tenantName] = tenant
+		}
+	}
+	return tempAS3Config
+}
+
+func getADC() map[string]interface{} {
+	var as3Obj map[string]interface{}
+
+	baseAS3ConfigTemplate := fmt.Sprintf(baseAS3Config, "3.36.1", "3.36.1-1", "3.36.0")
+	_ = json.Unmarshal([]byte(baseAS3ConfigTemplate), &as3Obj)
+
+	return as3Obj
+}
+
+func prepareTenantDeclaration(cfg *AS3Config, tenantName string) as3Declaration {
+
+	as3Obj := getADC()
+	adc, _ := as3Obj["declaration"].(map[string]interface{})
+
+	adc[tenantName] = cfg.tenantMap[tenantName]
+
+	unifiedDecl, err := json.Marshal(as3Obj)
+	if err != nil {
+		fmt.Printf("[AS3] Unified declaration: %v", err)
+	}
+
+	return as3Declaration(unifiedDecl)
+}
+
+func getAS3APIURL(tenants []string) string {
+	apiURL := "https://192.168.45.52/mgmt/shared/appsvcs/declare/" + strings.Join(tenants, ",")
+	return apiURL
+}
+
+/*
+The steps for create first VS in a clean BIG-IP VE:
+
+ 1. Prepare as3 Configmap base on appMgr's RequestMessage via channel, the sub tasks of prepare as3 Configmap including:
+ 1. extract the service endpoint
+ 2. Preapre Declaration
+ 3. Create HTTP Client
+ 4. Process HTTP POST request and verify the results
+*/
 func TestCreateFirstVSInCleanVEViaCM(t *testing.T) {
 
 	as3Config := &AS3Config{
@@ -585,5 +634,95 @@ func TestCreateFirstVSInCleanVEViaCM(t *testing.T) {
 	// Process all Configmaps (including overrideAS3)
 	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps()
 
-	t.Logf("%v", as3Config)
+	updateTenantMap(*as3Config)
+
+	partition := "cistest001"
+	tenantDecl := prepareTenantDeclaration(as3Config, partition)
+	data := string(tenantDecl)
+
+	t.Logf("declaration: %s", data)
+	url := getAS3APIURL([]string{partition})
+	t.Logf("url: %s", url)
+
+	cfg := config{
+		data:      data,
+		as3APIURL: url,
+	}
+	httpReqBody := bytes.NewBuffer([]byte(cfg.data))
+
+	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
+	if err != nil {
+		t.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+	}
+	t.Logf("[AS3] posting request to %v", cfg.as3APIURL)
+
+	req.SetBasicAuth("admin", "admin")
+	httpClient = createHTTPClient()
+	httpResp, responseMap := httpReq(req)
+	t.Logf("httpResp: %v", httpResp)
+	t.Logf("response: %v", responseMap)
+
+	results := (responseMap["results"]).([]interface{})
+	for _, value := range results {
+		v := value.(map[string]interface{})
+		t.Logf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
+	}
+
+}
+
+func getEmptyAs3Declaration(partition string) as3Declaration {
+	var as3Config map[string]interface{}
+	baseAS3ConfigEmpty := fmt.Sprintf(baseAS3Config, "3.36.1", "3.36.1-1", "3.36.0")
+	_ = json.Unmarshal([]byte(baseAS3ConfigEmpty), &as3Config)
+	decl := as3Config["declaration"].(map[string]interface{})
+	controlObj := make(as3Control)
+	controlObj["class"] = "Controls"
+	controlObj["userAgent"] = "CIS/v K8S/v 1.23.10"
+	decl["controls"] = controlObj
+	tenantObj := make(as3Tenant)
+	app := as3Application{}
+	app["class"] = "Application"
+	app["template"] = "shared"
+	tenantObj["class"] = "Tenant"
+	tenantObj["Shared"] = app
+	tenantObj["defaultRouteDomain"] = 0
+	decl[partition] = tenantObj
+	data, _ := json.Marshal(as3Config)
+	emptyAS3Declaration := as3Declaration(data)
+	return emptyAS3Declaration
+}
+
+func TestDeletePartition(t *testing.T) {
+
+	partition := "cistest001"
+	emptyAS3Declaration := getEmptyAs3Declaration(partition)
+	data := string(emptyAS3Declaration)
+	url := "https://192.168.45.52/mgmt/shared/appsvcs/declare/cistest001"
+
+	t.Logf("declaration: %s", data)
+	t.Logf("url: %s", url)
+
+	cfg := config{
+		data:      data,
+		as3APIURL: url,
+	}
+	httpReqBody := bytes.NewBuffer([]byte(cfg.data))
+
+	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
+	if err != nil {
+		t.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+	}
+	t.Logf("[AS3] posting request to %v", cfg.as3APIURL)
+
+	req.SetBasicAuth("admin", "admin")
+	httpClient = createHTTPClient()
+	httpResp, responseMap := httpReq(req)
+	t.Logf("httpResp: %v", httpResp)
+	t.Logf("response: %v", responseMap)
+
+	results := (responseMap["results"]).([]interface{})
+	for _, value := range results {
+		v := value.(map[string]interface{})
+		t.Logf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
+	}
 }

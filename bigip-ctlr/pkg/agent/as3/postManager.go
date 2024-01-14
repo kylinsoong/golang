@@ -225,8 +225,7 @@ func (postMgr *PostManager) GetBigipRegKey() (string, error) {
 		}
 	case http.StatusNotFound:
 		if int(responseMap["code"].(float64)) == http.StatusNotFound {
-			return "", fmt.Errorf("AS3 RPM is not installed on BIGIP,"+
-				" Error response from BIGIP with status code %v", httpResp.StatusCode)
+			return "", fmt.Errorf("AS3 RPM is not installed on BIGIP, Error response from BIGIP with status code %v", httpResp.StatusCode)
 		}
 	}
 	return "", fmt.Errorf("Error response from BIGIP with status code %v", httpResp.StatusCode)
@@ -248,7 +247,7 @@ func (postMgr *PostManager) httpReq(request *http.Request) (*http.Response, map[
 	var response map[string]interface{}
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Errorf("[AS3] Response body unmarshal failed: %v\n", err)
+		log.Errorf("[AS3] Response body unmarshal failed: %v", err)
 		if postMgr.LogResponse {
 			log.Errorf("[AS3] Raw response from Big-IP: %v", string(body))
 		}
