@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"reflect"
@@ -31,6 +32,7 @@ import (
 var (
 	appMgr     appmanager.Manager
 	httpClient *http.Client
+	globalMap  map[string]bool
 )
 
 type (
@@ -52,6 +54,80 @@ type (
 type config struct {
 	data      string
 	as3APIURL string
+}
+
+func generateIP() string {
+	ip := fmt.Sprintf("10.244.%d.%d", rand.Intn(256), rand.Intn(255))
+	if globalMap[ip] {
+		return generateIP()
+	} else {
+		globalMap[ip] = true
+		return ip
+	}
+}
+
+func post_as3_declaration(cfg config) {
+	httpReqBody := bytes.NewBuffer([]byte(cfg.data))
+
+	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
+	if err != nil {
+		fmt.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+	}
+	fmt.Printf("[AS3] posting request to %v\n", cfg.as3APIURL)
+
+	req.SetBasicAuth("admin", "admin")
+	httpClient = createHTTPClient()
+	httpResp, responseMap := httpReq(req)
+	fmt.Printf("httpResp: %v\n", httpResp)
+	fmt.Printf("response: %v\n", responseMap)
+
+	results := (responseMap["results"]).([]interface{})
+	for _, value := range results {
+		v := value.(map[string]interface{})
+		fmt.Printf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
+	}
+}
+
+func process_deletion(partition string) {
+	emptyAS3Declaration := getEmptyAs3Declaration(partition)
+	data := string(emptyAS3Declaration)
+	url := getAS3APIURL([]string{partition})
+
+	fmt.Printf("declaration: %s\n", data)
+	fmt.Printf("url: %s\n", url)
+
+	cfg := config{
+		data:      data,
+		as3APIURL: url,
+	}
+	httpReqBody := bytes.NewBuffer([]byte(cfg.data))
+
+	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
+	if err != nil {
+		fmt.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+	}
+	fmt.Printf("[AS3] posting request to %v\n", cfg.as3APIURL)
+
+	req.SetBasicAuth("admin", "admin")
+	httpClient = createHTTPClient()
+	httpResp, responseMap := httpReq(req)
+	fmt.Printf("httpResp: %v\n", httpResp)
+	fmt.Printf("response: %v\n", responseMap)
+
+	results := (responseMap["results"]).([]interface{})
+	for _, value := range results {
+		v := value.(map[string]interface{})
+		fmt.Printf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v\n", v["code"], v["tenant"], v["message"], v["runTime"])
+	}
+}
+
+func exreact_tenant_names(name string) []string {
+	tenantMap, _ := processCfgMap(name)
+	partitions := make([]string, 0, len(tenantMap))
+	for partition := range tenantMap {
+		partitions = append(partitions, partition)
+	}
+	return partitions
 }
 
 func createHTTPClient() *http.Client {
@@ -465,25 +541,46 @@ func GetAppEndpoints() []Member {
 	var members []Member
 
 	member1 := Member{
-		Address: "1.1.1.1",
+		Address: generateIP(),
 		Port:    8080,
 		SvcPort: 80,
 	}
 	member2 := Member{
-		Address: "1.1.1.2",
+		Address: generateIP(),
+		Port:    8080,
+		SvcPort: 80,
+	}
+
+	member3 := Member{
+		Address: generateIP(),
+		Port:    8080,
+		SvcPort: 80,
+	}
+
+	member4 := Member{
+		Address: generateIP(),
+		Port:    8080,
+		SvcPort: 80,
+	}
+
+	member5 := Member{
+		Address: generateIP(),
 		Port:    8080,
 		SvcPort: 80,
 	}
 
 	members = append(members, member1)
 	members = append(members, member2)
+	members = append(members, member3)
+	members = append(members, member4)
+	members = append(members, member5)
 
 	return members
 }
 
-func processCfgMap() (map[string]interface{}, []Member) {
+func processCfgMap(name string) (map[string]interface{}, []Member) {
 
-	data, err := test.LoadFileAsString("cm1.txt")
+	data, err := test.LoadFileAsString(name)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return nil, nil
@@ -555,7 +652,7 @@ func processCfgMap() (map[string]interface{}, []Member) {
 	return tenantMap, members
 }
 
-func prepareResourceAS3ConfigMaps() ([]*AS3ConfigMap, string) {
+func prepareResourceAS3ConfigMaps(name string) ([]*AS3ConfigMap, string) {
 
 	var as3Cfgmaps []*AS3ConfigMap
 	var overriderAS3CfgmapData string
@@ -566,7 +663,7 @@ func prepareResourceAS3ConfigMaps() ([]*AS3ConfigMap, string) {
 		Validated: true,
 	}
 
-	tenantMap, endPoints := processCfgMap()
+	tenantMap, endPoints := processCfgMap(name)
 	cfgmap.config = tenantMap
 	cfgmap.endPoints = endPoints
 	as3Cfgmaps = append(as3Cfgmaps, cfgmap)
@@ -702,7 +799,7 @@ func TestCreateFirstVSInCleanVEViaCM(t *testing.T) {
 	as3Config.resourceConfig = prepareAS3ResourceConfig()
 
 	// Process all Configmaps (including overrideAS3)
-	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps()
+	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps("cm1.txt")
 
 	updateTenantMap(*as3Config)
 
@@ -768,7 +865,7 @@ Steps to delete a partition
 
 This test function can be simulated with the below curl:
 
-% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/cm1-del.json https://192.168.45.52/mgmt/shared/appsvcs/declare/cistest001 | jq
+% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/cm1-del.json https://192.168.45.52/mgmt/shared/appsvcs/declare/cistest001
 
 	{
 	  "results": [
@@ -799,34 +896,48 @@ This test function can be simulated with the below curl:
 func TestDeletePartition(t *testing.T) {
 
 	partition := "cistest001"
-	emptyAS3Declaration := getEmptyAs3Declaration(partition)
-	data := string(emptyAS3Declaration)
-	url := "https://192.168.45.52/mgmt/shared/appsvcs/declare/cistest001"
+	process_deletion(partition)
 
-	t.Logf("declaration: %s", data)
-	t.Logf("url: %s", url)
+}
 
-	cfg := config{
-		data:      data,
-		as3APIURL: url,
+func TestCreateMultipleVS(t *testing.T) {
+
+	globalMap = make(map[string]bool)
+
+	as3Config := &AS3Config{
+		tenantMap: make(map[string]interface{}),
 	}
-	httpReqBody := bytes.NewBuffer([]byte(cfg.data))
 
-	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
-	if err != nil {
-		t.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+	// Process Route or Ingress
+	as3Config.resourceConfig = prepareAS3ResourceConfig()
+
+	// Process all Configmaps (including overrideAS3)
+	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps("cm2.txt")
+
+	updateTenantMap(*as3Config)
+
+	t.Logf("as3Config: %v", as3Config)
+
+	for partition, tenant := range as3Config.tenantMap {
+		t.Logf("%s, %v", partition, tenant)
+		tenantDecl := prepareTenantDeclaration(as3Config, partition)
+		data := string(tenantDecl)
+		url := getAS3APIURL([]string{partition})
+		t.Logf("data: %s", data)
+		t.Logf("url: %s", url)
+		cfg := config{
+			data:      data,
+			as3APIURL: url,
+		}
+		post_as3_declaration(cfg)
 	}
-	t.Logf("[AS3] posting request to %v", cfg.as3APIURL)
 
-	req.SetBasicAuth("admin", "admin")
-	httpClient = createHTTPClient()
-	httpResp, responseMap := httpReq(req)
-	t.Logf("httpResp: %v", httpResp)
-	t.Logf("response: %v", responseMap)
+}
 
-	results := (responseMap["results"]).([]interface{})
-	for _, value := range results {
-		v := value.(map[string]interface{})
-		t.Logf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
+func TestDeleteMultipleVS(t *testing.T) {
+	globalMap = make(map[string]bool)
+	partitions := exreact_tenant_names("cm2.txt")
+	for _, partition := range partitions {
+		process_deletion(partition)
 	}
 }
