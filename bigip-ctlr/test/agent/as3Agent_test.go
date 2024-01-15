@@ -26,6 +26,8 @@ import (
 	cisAgent "github.com/kylinsoong/bigip-ctlr/pkg/agent"
 	"github.com/kylinsoong/bigip-ctlr/pkg/appmanager"
 	. "github.com/kylinsoong/bigip-ctlr/pkg/resource"
+	log "github.com/kylinsoong/bigip-ctlr/pkg/vlogger"
+	clog "github.com/kylinsoong/bigip-ctlr/pkg/vlogger/console"
 	"github.com/kylinsoong/bigip-ctlr/test"
 )
 
@@ -56,6 +58,21 @@ type config struct {
 	as3APIURL string
 }
 
+func initLogger(logLevel string) error {
+	log.RegisterLogger(log.LL_MIN_LEVEL, log.LL_MAX_LEVEL, clog.NewConsoleLogger())
+
+	if ll := log.NewLogLevel(logLevel); nil != ll {
+		log.SetLogLevel(*ll)
+	} else {
+		return fmt.Errorf("Unknown log level requested: %s\n"+"    Valid log levels are: DEBUG, INFO, WARNING, ERROR, CRITICAL", logLevel)
+	}
+	return nil
+}
+
+func init() {
+	initLogger("DEBUG")
+}
+
 func generateIP() string {
 	ip := fmt.Sprintf("10.244.%d.%d", rand.Intn(256), rand.Intn(255))
 	if globalMap[ip] {
@@ -71,20 +88,20 @@ func post_as3_declaration(cfg config) {
 
 	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
 	if err != nil {
-		fmt.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+		log.Errorf("[AS3] Creating new HTTP request error: %v ", err)
 	}
-	fmt.Printf("[AS3] posting request to %v\n", cfg.as3APIURL)
+	log.Infof("[AS3] posting request to %v", cfg.as3APIURL)
 
 	req.SetBasicAuth("admin", "admin")
 	httpClient = createHTTPClient()
-	httpResp, responseMap := httpReq(req)
-	fmt.Printf("httpResp: %v\n", httpResp)
-	fmt.Printf("response: %v\n", responseMap)
+	_, responseMap := httpReq(req)
+	//fmt.Printf("httpResp: %v\n", httpResp)
+	//fmt.Printf("response: %v\n", responseMap)
 
 	results := (responseMap["results"]).([]interface{})
 	for _, value := range results {
 		v := value.(map[string]interface{})
-		fmt.Printf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
+		log.Infof("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
 	}
 }
 
@@ -93,8 +110,8 @@ func process_deletion(partition string) {
 	data := string(emptyAS3Declaration)
 	url := getAS3APIURL([]string{partition})
 
-	fmt.Printf("declaration: %s\n", data)
-	fmt.Printf("url: %s\n", url)
+	//fmt.Printf("declaration: %s\n", data)
+	//fmt.Printf("url: %s\n", url)
 
 	cfg := config{
 		data:      data,
@@ -104,20 +121,20 @@ func process_deletion(partition string) {
 
 	req, err := http.NewRequest("POST", cfg.as3APIURL, httpReqBody)
 	if err != nil {
-		fmt.Errorf("[AS3] Creating new HTTP request error: %v ", err)
+		log.Errorf("[AS3] Creating new HTTP request error: %v ", err)
 	}
-	fmt.Printf("[AS3] posting request to %v\n", cfg.as3APIURL)
+	log.Infof("[AS3] posting request to %v", cfg.as3APIURL)
 
 	req.SetBasicAuth("admin", "admin")
 	httpClient = createHTTPClient()
-	httpResp, responseMap := httpReq(req)
-	fmt.Printf("httpResp: %v\n", httpResp)
-	fmt.Printf("response: %v\n", responseMap)
+	_, responseMap := httpReq(req)
+	//fmt.Printf("httpResp: %v\n", httpResp)
+	//fmt.Printf("response: %v\n", responseMap)
 
 	results := (responseMap["results"]).([]interface{})
 	for _, value := range results {
 		v := value.(map[string]interface{})
-		fmt.Printf("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v\n", v["code"], v["tenant"], v["message"], v["runTime"])
+		log.Infof("[AS3] Response from BIG-IP: code: %v, tenant: %v, message: %v, runTime: %v", v["code"], v["tenant"], v["message"], v["runTime"])
 	}
 }
 
@@ -937,6 +954,89 @@ func TestCreateMultipleVS(t *testing.T) {
 func TestDeleteMultipleVS(t *testing.T) {
 	globalMap = make(map[string]bool)
 	partitions := exreact_tenant_names("cm2.txt")
+	for _, partition := range partitions {
+		process_deletion(partition)
+	}
+}
+
+func TestCreate250AppIn25NS(t *testing.T) {
+
+	globalMap = make(map[string]bool)
+
+	as3Config := &AS3Config{
+		tenantMap: make(map[string]interface{}),
+	}
+
+	// Process Route or Ingress
+	as3Config.resourceConfig = prepareAS3ResourceConfig()
+
+	// Process all Configmaps (including overrideAS3)
+	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps("cm250.txt")
+
+	updateTenantMap(*as3Config)
+
+	//t.Logf("as3Config: %v", as3Config)
+
+	for partition, _ := range as3Config.tenantMap {
+		//	t.Logf("%s, %v", partition, tenant)
+		tenantDecl := prepareTenantDeclaration(as3Config, partition)
+		data := string(tenantDecl)
+		url := getAS3APIURL([]string{partition})
+		//t.Logf("data: %s", data)
+		//t.Logf("url: %s", url)
+		cfg := config{
+			data:      data,
+			as3APIURL: url,
+		}
+		post_as3_declaration(cfg)
+	}
+
+}
+
+func TestDelete250AppIn25NS(t *testing.T) {
+	globalMap = make(map[string]bool)
+	partitions := exreact_tenant_names("cm250.txt")
+	for _, partition := range partitions {
+		process_deletion(partition)
+	}
+}
+
+func TestCreate1000AppIn50NS(t *testing.T) {
+
+	globalMap = make(map[string]bool)
+
+	as3Config := &AS3Config{
+		tenantMap: make(map[string]interface{}),
+	}
+
+	// Process Route or Ingress
+	as3Config.resourceConfig = prepareAS3ResourceConfig()
+
+	// Process all Configmaps (including overrideAS3)
+	as3Config.configmaps, as3Config.overrideConfigmapData = prepareResourceAS3ConfigMaps("cm1000.txt")
+
+	updateTenantMap(*as3Config)
+
+	//t.Logf("as3Config: %v", as3Config)
+
+	for partition, _ := range as3Config.tenantMap {
+		//	t.Logf("%s, %v", partition, tenant)
+		tenantDecl := prepareTenantDeclaration(as3Config, partition)
+		data := string(tenantDecl)
+		url := getAS3APIURL([]string{partition})
+		//t.Logf("data: %s", data)
+		//t.Logf("url: %s", url)
+		cfg := config{
+			data:      data,
+			as3APIURL: url,
+		}
+		post_as3_declaration(cfg)
+	}
+}
+
+func TestDelete1000AppIn50NS(t *testing.T) {
+	globalMap = make(map[string]bool)
+	partitions := exreact_tenant_names("cm1000.txt")
 	for _, partition := range partitions {
 		process_deletion(partition)
 	}
