@@ -1,0 +1,61 @@
+= How to run
+
+[source, bash]
+----
+go mod init github.com/kylinsoong/golang/as3-mock
+go mod tidy
+go run cmd/as3-mock/main.go
+----
+
+== Current Supported API
+
+=== /mgmt/tm/shared/licensing/registration
+
+[source, bash]
+----
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/tm/shared/licensing/registration 
+{
+  "vendor": "F5 Networks, Inc.",
+  "licensedDateTime": "2024-01-10T00:00:00-08:00",
+  "licensedVersion": "15.1.10",
+  "licenseEndDateTime": "2025-02-10T00:00:00-08:00",
+  "licenseStartDateTime": "2024-01-09T00:00:00-08:00",
+  "registrationKey": "KVPKO-EBYPF-UFQQG-WYBNP-TXRHIMF"
+}
+----
+
+=== /mgmt/shared/appsvcs/info
+
+[source, bash]
+----
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/shared/appsvcs/info
+{
+  "version": "3.36.1",
+  "release": "1",
+  "schemaCurrent": "3.36.0",
+  "schemaMinimum": "3.0.0"
+}
+---- 
+
+=== mgmt/shared/appsvcs/declare/{partition}
+
+[source, bash]
+----
+% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/emptyAS3Declaration.json https://127.0.0.1/mgmt/shared/appsvcs/declare/cistest002 
+{
+  "declaration": {
+    "class": "ADC",
+    "updateMode": "selective"
+  },
+  "results": [
+    {
+      "code": 200,
+      "host": "localhost",
+      "lineCount": 30,
+      "message": "success",
+      "runTime": 100,
+      "tenant": "cistest002"
+    }
+  ]
+}
+----
