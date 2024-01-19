@@ -427,7 +427,6 @@ func (appMgr *Manager) AddNamespaceLabelInformer(labelSelector labels.Selector, 
 }
 
 func (appMgr *Manager) namespaceWorker() {
-	log.Infof("---> namespaceWorker")
 	for appMgr.processNextNamespace() {
 	}
 }
@@ -439,7 +438,6 @@ func (appMgr *Manager) processNextNamespace() bool {
 	}
 	defer appMgr.nsQueue.Done(key)
 
-	log.Infof("---> processNextNamespace, %v", key)
 	err := appMgr.syncNamespace(key.(string))
 	if err == nil {
 		appMgr.nsQueue.Forget(key)
@@ -498,7 +496,6 @@ func (appMgr *Manager) triggerSyncResources(ns string, inf *appInformer) {
 }
 
 func (appMgr *Manager) syncNamespace(nsName string) error {
-	log.Infof("---> syncing namespce %v start", nsName)
 	startTime := time.Now()
 	var err error
 	defer func() {
@@ -1049,13 +1046,11 @@ func (appMgr *Manager) Run(stopCh <-chan struct{}) {
 }
 
 func (appMgr *Manager) runImpl(stopCh <-chan struct{}) {
-	log.Infof("---> appMgr runImpl")
 	defer utilruntime.HandleCrash()
 	defer appMgr.vsQueue.ShutDown()
 	defer appMgr.nsQueue.ShutDown()
 
 	if nil != appMgr.nsInformer {
-		log.Infof("---> appMgr startAndSyncNamespaceInformer")
 		// Using one worker for namespace label changes.
 		appMgr.startAndSyncNamespaceInformer(stopCh)
 		go wait.Until(appMgr.namespaceWorker, time.Second, stopCh)
@@ -1087,11 +1082,11 @@ func (appMgr *Manager) startAndSyncAppInformers() {
 func (appMgr *Manager) startAppInformersLocked() {
 	for _, appInf := range appMgr.appInformers {
 		appInf.start()
-		log.Infof("---> appMgr start app informer for namespace %s", appInf.namespace)
+		log.Infof("[CORE] appMgr start app informer for namespace %s", appInf.namespace)
 	}
 	if nil != appMgr.as3Informer {
 		appMgr.as3Informer.start()
-		log.Infof("---> appMgr start as3 infomer %s", appMgr.as3Informer.namespace)
+		log.Infof("[CORE] appMgr start as3 infomer %s", appMgr.as3Informer.namespace)
 	}
 }
 
@@ -1104,11 +1099,11 @@ func (appMgr *Manager) waitForCacheSync() {
 func (appMgr *Manager) waitForCacheSyncLocked() {
 	for _, appInf := range appMgr.appInformers {
 		appInf.waitForCacheSync()
-		log.Infof("---> appMgr sync app informer for namespace %s", appInf.namespace)
+		log.Infof("[CORE] appMgr sync app informer for namespace %s", appInf.namespace)
 	}
 	if nil != appMgr.as3Informer {
 		appMgr.as3Informer.waitForCacheSync()
-		log.Infof("---> appMgr sync as3 infomer %s", appMgr.as3Informer.namespace)
+		log.Infof("[CORE] appMgr sync as3 infomer %s", appMgr.as3Informer.namespace)
 	}
 }
 
@@ -1124,7 +1119,6 @@ func (appMgr *Manager) stopAppInformers() {
 }
 
 func (appMgr *Manager) virtualServerWorker() {
-	log.Infof("---> virtualServerWorker")
 	for appMgr.processNextVirtualServer() {
 	}
 }
@@ -1249,7 +1243,6 @@ func (appMgr *Manager) processNextVirtualServer() bool {
 		return true
 	}
 
-	log.Infof("---> processNextVirtualServer, %v", skey)
 	err := appMgr.syncVirtualServer(skey)
 	if err == nil {
 		if !appMgr.steadyState {
@@ -1288,7 +1281,6 @@ type vsSyncStats struct {
 }
 
 func (appMgr *Manager) syncVirtualServer(sKey serviceQueueKey) error {
-	log.Infof("---> syncing virtual server %v start", sKey)
 	startTime := time.Now()
 	defer func() {
 		endTime := time.Now()
@@ -1302,9 +1294,7 @@ func (appMgr *Manager) syncVirtualServer(sKey serviceQueueKey) error {
 	if !haveNamespace {
 		// This shouldn't happen as the namespace is checked for every item before
 		// it is added to the queue, but issue a warning if it does.
-		log.Warningf(
-			"Received an update for an item from an un-watched namespace %v",
-			sKey.Namespace)
+		log.Warningf("Received an update for an item from an un-watched namespace %v", sKey.Namespace)
 		return nil
 	}
 

@@ -42,7 +42,7 @@ func (ag *agentAS3) Deploy(req interface{}) error {
 	case <-ag.ReqChan:
 		ag.ReqChan <- msgReq
 	}
-	log.Debugf("[AS3] Sent message to %v, ReqID: %d, MsgType: %s, ResourceRequest: %v", ag.ReqChan, msgReq.ReqID, msgReq.MsgType, msgReq.ResourceRequest)
+	log.Debugf("[AS3] Sent message to %v, ReqID: %d, MsgType: %s, ResourceRequest: %v", ag.ReqChan, msgReq.ReqID, msgReq.MsgType, msgReq.ResourceRequest.AgentCfgmaps)
 	return nil
 }
 

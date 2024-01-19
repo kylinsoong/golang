@@ -544,7 +544,7 @@ func (am *AS3Manager) ConfigDeployer() {
 	am.unprocessableEntityStatus = false
 	postDelayTimeout := time.Duration(am.PostManager.AS3PostDelay) * time.Second
 	for msgReq := range am.ReqChan {
-		log.Debugf("[AS3] Receive message from %v, ReqID: %d, MsgType: %s, ResourceRequest: %v", am.ReqChan, msgReq.ReqID, msgReq.MsgType, msgReq.ResourceRequest)
+		log.Debugf("[AS3] Receive message from %v, ReqID: %d, MsgType: %s, ResourceRequest: %v", am.ReqChan, msgReq.ReqID, msgReq.MsgType, msgReq.ResourceRequest.AgentCfgmaps)
 		if !firstPost && am.PostManager.AS3PostDelay != 0 {
 			// Time (in seconds) that CIS waits to post the AS3 declaration to BIG-IP.
 			log.Debugf("[AS3] Delaying post to BIG-IP for %v seconds", am.PostManager.AS3PostDelay)

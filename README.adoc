@@ -201,7 +201,45 @@ func main() {
 
 == Fundamentals
 
-TODO--
+=== object-oriented programming: interface composition
+
+Go does not support traditional interface inheritance like some other object-oriented programming languages. Instead, Go uses a concept called "interface composition" or "embedding" to achieve similar goals without relying on classical inheritance.
+
+In Go, you can embed one interface within another to create a new interface that includes the methods of the embedded interface. 
+
+[source, go]
+.*Interface*
+----
+type Interface interface {
+	Add(item interface{})
+	Len() int
+	Get() (item interface{}, shutdown bool)
+	Done(item interface{})
+	ShutDown()
+	ShutDownWithDrain()
+	ShuttingDown() bool
+}
+----
+
+[source, go]
+.*DelayingInterface*
+----
+type DelayingInterface interface {
+	Interface
+	AddAfter(item interface{}, duration time.Duration)
+}
+----
+
+[source, go]
+.*RateLimitingInterface*
+----
+type RateLimitingInterface interface {
+	DelayingInterface
+	AddRateLimited(item interface{})
+	Forget(item interface{})
+	NumRequeues(item interface{}) int
+}
+----
 
 == Multi-threads
 
@@ -234,6 +272,34 @@ func main() {
     }
 }
 ----
+
+=== channel: send and receive data
+
+Channels are a typed conduit through which you can send and receive values with the channel operator *<-*:
+
+* ch <- v           send v to channel
+*  v := <-ch         receive from channel, and assign value to v
+
+[source, go]
+----
+func sum(s []int, c chan int) {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	c <- sum // send sum to c
+}
+
+func Test_Send_Receive(t *testing.T) {
+	s := []int{7, 2, 8, -9, 4, 0}
+	c := make(chan int)
+	go sum(s[:len(s)/2], c)
+	go sum(s[len(s)/2:], c)
+	x, y := <-c, <-c
+	fmt.Println(x, y, x+y)
+}
+----
+
 
 === channel: communication and synchronization between goroutines
 
@@ -274,6 +340,32 @@ func main() {
     go squareCalculator(numberCh, resultCh, &wg)
     go resultPrinter(resultCh, &wg)
     wg.Wait()
+}
+----
+
+=== channel: multiple chanels with select case statement
+
+The select statement in Go is used to choose from multiple communication operations. It allows a goroutine to wait on multiple communication operations, blocking until one of them can proceed.
+
+[source, go]
+----
+func simple_worker(c chan string) {
+	c <- fmt.Sprintf("Hello from Channel %v", c)
+}
+
+func Test_Multiple_Chan_With_Select(t *testing.T) {
+	ch1 := make(chan string)
+	ch2 := make(chan string)
+	go simple_worker(ch1)
+	go simple_worker(ch2)
+	select {
+	case msg1 := <-ch1:
+		fmt.Println(msg1)
+	case msg2 := <-ch2:
+		fmt.Println(msg2)
+	case <-time.After(3 * time.Second):
+		fmt.Println("Timed out waiting for messages.")
+	}
 }
 ----
 
@@ -367,4 +459,57 @@ func main() {
     time.Sleep(1 * time.Second)
     fmt.Println("Main goroutine exiting...")
 }
+----
+
+=== k8s.io/client-go/util/workqueue
+
+==== workqueue.RateLimitingInterface
+
+The `workqueue.RateLimitingInterface` is an interface used in Kubernetes and its controller-runtime library for rate limiting operations in work queues. This interface defines methods related to rate limiting, and it is commonly implemented by a rate limiter to control the rate at which operations are processed.
+
+[source, go]
+----
+type RateLimitingInterface interface {
+	// AddRateLimited adds an item to the work queue after the rate limiter allows it.
+	AddRateLimited(item interface{})
+	// Forget indicates that an item is finished being retried. Doesn't matter if it's for perm failing
+	Forget(item interface{})
+	// NumRequeues returns the number of retries this item has left.
+	NumRequeues(item interface{}) int
+	// Done indicates that an item is done being retried. Doesn't matter if it's for perm failing
+	Done(item interface{})
+	// UpdateRateLimiting adjusts the rate limiter.
+	UpdateRateLimiting(item interface{})
+	// When implements RateLimiter interface.
+	When(item interface{}) time.Duration
+}
+----
+
+
+=== k8s.io/client-go/tools/cache
+
+Package cache is a client-side caching mechanism. It is useful for reducing the number of server calls you'd otherwise need to make. Reflector watches a server and updates a Store. Two stores are provided; one that simply caches objects (for example, to allow a scheduler to list currently available nodes), and one that additionally acts as a FIFO queue (for example, to allow a scheduler to process incoming pods).
+
+[source, go]
+----
+	cfgMapInformer = cache.NewSharedIndexInformer(
+		cache.NewFilteredListWatchFromClient(
+			restClientv1,
+			Configmaps,
+			namespace,
+			everything,
+		),
+		&v1.ConfigMap{},
+		resyncPeriod,
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
+	)
+
+	cfgMapInformer.AddEventHandlerWithResyncPeriod(
+		&cache.ResourceEventHandlerFuncs{
+			AddFunc:    func(obj interface{}) { enqueueConfigMap(obj, OprTypeCreate) },
+			UpdateFunc: func(old, cur interface{}) { enqueueConfigMap(cur, OprTypeUpdate) },
+			DeleteFunc: func(obj interface{}) { enqueueConfigMap(obj, OprTypeDelete) },
+		},
+		resyncPeriod,
+	)
 ----

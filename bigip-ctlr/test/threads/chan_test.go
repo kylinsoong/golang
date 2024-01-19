@@ -1,4 +1,4 @@
-package channel
+package threads
 
 import (
 	"encoding/json"
@@ -347,6 +347,47 @@ func Test_Communication_Synchronization(t *testing.T) {
 	go numberGenerator(numberCh, &wg)
 	time.Sleep(1000 * time.Millisecond)
 	wg.Wait()
+}
+
+func sum(s []int, c chan int) {
+	sum := 0
+	for _, v := range s {
+		sum += v
+	}
+	c <- sum // send sum to c
+}
+
+/*
+	    make(chan int)    init a channel
+		ch <- v           send v to channel
+		v := <-ch         receive from channel, and assign value to v
+*/
+func Test_Send_Receive(t *testing.T) {
+	s := []int{7, 2, 8, -9, 4, 0}
+	c := make(chan int)
+	go sum(s[:len(s)/2], c)
+	go sum(s[len(s)/2:], c)
+	x, y := <-c, <-c
+	fmt.Println(x, y, x+y)
+}
+
+func simple_worker(c chan string) {
+	c <- fmt.Sprintf("Hello from Channel %v", c)
+}
+
+func Test_Multiple_Chan_With_Select(t *testing.T) {
+	ch1 := make(chan string)
+	ch2 := make(chan string)
+	go simple_worker(ch1)
+	go simple_worker(ch2)
+	select {
+	case msg1 := <-ch1:
+		fmt.Println(msg1)
+	case msg2 := <-ch2:
+		fmt.Println(msg2)
+	case <-time.After(3 * time.Second):
+		fmt.Println("Timed out waiting for messages.")
+	}
 }
 
 func prepareResourceKey(kind, namespace, name string) string {

@@ -212,6 +212,11 @@ func (am *AS3Manager) processCfgMap(rscCfgMap *AgentCfgMap) (map[string]interfac
 		}
 		tenantMap[string(tnt)] = tenantObj
 	}
+	if members != nil {
+		log.Debugf("Processed configmap, extract %d tenants, %d members", len(tenantMap), len(members))
+	} else {
+		log.Debugf("Processed configmap, extract %d tenants", len(tenantMap))
+	}
 	return tenantMap, members
 }
 
