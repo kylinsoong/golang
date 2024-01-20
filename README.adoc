@@ -485,6 +485,38 @@ type RateLimitingInterface interface {
 }
 ----
 
+=== How to create kubernetes client
+
+There are 2 stps necessary to create a kubeClient:
+
+* Create Kubernetes Rest Config, If your application run in Kubernetes, the use the certifications keys in Namespace default ServiceAccount, if your application run outside Kubernetes, then you need pass `~/.kube/config` file to create Rest Config
+* Create Kubernetes Client via Kubernetes Rest Config 
+
+[source, go]
+----
+import "k8s.io/client-go/kubernetes"
+import "k8s.io/client-go/rest"
+import "k8s.io/client-go/tools/clientcmd"
+
+var kubeClient  kubernetes.Interface 
+var config      *rest.Config
+var err         error
+
+
+if *inCluster {
+    config, err = rest.InClusterConfig()
+} else {
+    config, err = clientcmd.BuildConfigFromFlags("", *kubeConfig)
+}
+if err != nil {
+    log.Fatalf("[INIT] error creating configuration: %v", err)
+}
+
+kubeClient, err = kubernetes.NewForConfig(config)
+if err != nil {
+    log.Fatalf("[INIT] error connecting to the client: %v", err)
+}
+----
 
 === k8s.io/client-go/tools/cache
 
