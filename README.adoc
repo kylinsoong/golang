@@ -439,7 +439,7 @@ func (c *Counter) getValue() int {
 
 == K8S
 
-=== k8s.io/apimachinery/pkg/util/wait
+=== How to repeatedly calls a provided function
 
 The `k8s.io/apimachinery/pkg/util/wait` provides utilities for waiting and timing operations. Specifically, `wait.Until` is a function that repeatedly calls a provided function until the stop channel is closed or a timeout is reached.
 
@@ -461,29 +461,9 @@ func main() {
 }
 ----
 
-=== k8s.io/client-go/util/workqueue
+=== How to use kubernetes rate limited workqueue
 
-==== workqueue.RateLimitingInterface
-
-The `workqueue.RateLimitingInterface` is an interface used in Kubernetes and its controller-runtime library for rate limiting operations in work queues. This interface defines methods related to rate limiting, and it is commonly implemented by a rate limiter to control the rate at which operations are processed.
-
-[source, go]
-----
-type RateLimitingInterface interface {
-	// AddRateLimited adds an item to the work queue after the rate limiter allows it.
-	AddRateLimited(item interface{})
-	// Forget indicates that an item is finished being retried. Doesn't matter if it's for perm failing
-	Forget(item interface{})
-	// NumRequeues returns the number of retries this item has left.
-	NumRequeues(item interface{}) int
-	// Done indicates that an item is done being retried. Doesn't matter if it's for perm failing
-	Done(item interface{})
-	// UpdateRateLimiting adjusts the rate limiter.
-	UpdateRateLimiting(item interface{})
-	// When implements RateLimiter interface.
-	When(item interface{}) time.Duration
-}
-----
+Refer to link:#object-oriented-programming-interface-composition[object-oriented programming: interface composition] for more details about `k8s.io/client-go/util/workqueue` and `RateLimitingInterface` implemenration.
 
 === How to create kubernetes client
 
@@ -518,9 +498,9 @@ if err != nil {
 }
 ----
 
-=== k8s.io/client-go/tools/cache
+=== How to use kubernetes client-side caching mechanism and cache api create a configmap watcher
 
-Package cache is a client-side caching mechanism. It is useful for reducing the number of server calls you'd otherwise need to make. Reflector watches a server and updates a Store. Two stores are provided; one that simply caches objects (for example, to allow a scheduler to list currently available nodes), and one that additionally acts as a FIFO queue (for example, to allow a scheduler to process incoming pods).
+`k8s.io/client-go/tools/cache` is a client-side caching mechanism. It is useful for reducing the number of server calls you'd otherwise need to make. Reflector watches a server and updates a Store. Two stores are provided; one that simply caches objects (for example, to allow a scheduler to list currently available nodes), and one that additionally acts as a FIFO queue (for example, to allow a scheduler to process incoming pods).
 
 [source, go]
 ----
