@@ -59,3 +59,11 @@ go run cmd/as3-mock/main.go
   ]
 }
 ----
+
+== Build Docker Image
+
+[source, bash]
+.*1. Build Source Code*
+----
+go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
+----
