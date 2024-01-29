@@ -1,14 +1,23 @@
-FROM golang:1.21.6-alpine3.18 
+FROM golang:alpine3.19 AS builder
 
-LABEL codebase   "https://github.com/kylinsoong/golang/tree/main/as3-mock"
 LABEL maintainer "kylinsoong.1214@gmail.com"
 
 WORKDIR /app
 
-ADD as3-mock /app
-ADD cert/certificate.crt /app
-ADD cert/private.key /app
+COPY . .
+
+RUN go mod init github.com/kylinsoong/golang/as3-mock
+RUN go mod tidy
+RUN go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
+
+FROM alpine:latest
+
+WORKDIR /app
+
+COPY --from=builder /app/as3-mock .
+COPY --from=builder /app/cert/certificate.crt .
+COPY --from=builder /app/cert/private.key .
 
 EXPOSE 443 
 
-CMD ["/app/as3-mock"]
+CMD ["./as3-mock"]

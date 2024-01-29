@@ -1,17 +1,31 @@
 = How to run
 
 [source, bash]
+.*Run From Source Code*
 ----
 go mod init github.com/kylinsoong/golang/as3-mock
 go mod tidy
+go run cmd/as3-mock/main.go --tls-certificate=$(pwd)/cert/certificate.crt --tls-private=$(pwd)/cert/private.key
+----
 
-// run from source code
-go run cmd/as3-mock/main.go
-
-// build & run
+[source, bash]
+.*Build Source Code & Run locally*
+----
+go mod init github.com/kylinsoong/golang/as3-mock
+go mod tidy
 go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
 ./as3-mock --tls-certificate=$(pwd)/cert/certificate.crt --tls-private=$(pwd)/cert/private.key
+----
 
+[source, bash]
+.*Build Source Code to Docker Image & Run locally*
+----
+docker build -t cloudadc/as3-mock:0.1 -f Dockerfile .
+docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1
+
+// build docker image & run (arm64)
+docker build -t cloudadc/as3-mock:0.1-arm64 -f Dockerfile.arm64 .
+docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1-arm64 
 ----
 
 == Current Supported API
