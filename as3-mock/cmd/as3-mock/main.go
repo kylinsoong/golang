@@ -41,8 +41,8 @@ func _init() {
     }
 
     logLevel = mockFlags.String("log-level", "INFO", "Optional, logging level")
-    tls_certificate = mockFlags.String("tls-certificate", "/Users/k.song/src/golang/as3-mock/cert/certificate.crt", "Optional, tls certificate")
-    tls_private = mockFlags.String("tls-private", "/Users/k.song/src/golang/as3-mock/cert/private.key", "Optional, tls private key")
+    tls_certificate = mockFlags.String("tls-certificate", "/app/certificate.crt", "Optional, tls certificate")
+    tls_private = mockFlags.String("tls-private", "/app/private.key", "Optional, tls private key")
 
     mockFlags.Usage = func() {
         fmt.Fprintf(os.Stderr, "  Flags:\n%s\n", mockFlags.FlagUsagesWrapped(width))

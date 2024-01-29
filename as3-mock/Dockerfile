@@ -6,6 +6,8 @@ LABEL maintainer "kylinsoong.1214@gmail.com"
 WORKDIR /app
 
 ADD as3-mock /app
+ADD cert/certificate.crt /app
+ADD cert/private.key /app
 
 EXPOSE 443 
 

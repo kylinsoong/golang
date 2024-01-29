@@ -6,7 +6,10 @@ LABEL maintainer "kylinsoong.1214@gmail.com"
 WORKDIR /app
 
 ADD as3-mock /app
+ADD cert/certificate.crt /app
+ADD cert/private.key /app
+
 
 EXPOSE 443 
 
-CMD ["/app/as3-mock"]
+CMD ["/app/as3-mock", "--tls-certificate=/app/certificate.crt", "--tls-private=/app/private.key"]

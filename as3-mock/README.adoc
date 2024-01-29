@@ -4,7 +4,14 @@
 ----
 go mod init github.com/kylinsoong/golang/as3-mock
 go mod tidy
+
+// run from source code
 go run cmd/as3-mock/main.go
+
+// build & run
+go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
+./as3-mock --tls-certificate=$(pwd)/cert/certificate.crt --tls-private=$(pwd)/cert/private.key
+
 ----
 
 == Current Supported API
@@ -60,10 +67,3 @@ go run cmd/as3-mock/main.go
 }
 ----
 
-== Build Docker Image
-
-[source, bash]
-.*1. Build Source Code*
-----
-go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
-----
