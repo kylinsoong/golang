@@ -25,6 +25,8 @@ const (
 
 func (am *AS3Manager) prepareResourceAS3ConfigMaps() ([]*AS3ConfigMap, string) {
 
+	log.Infof("[AS3] Prepare as3 configmap %v start", am.ResourceRequest.AgentCfgmaps)
+
 	var as3Cfgmaps []*AS3ConfigMap
 	var overriderAS3CfgmapData string
 
