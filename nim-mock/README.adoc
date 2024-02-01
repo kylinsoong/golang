@@ -1,0 +1,30 @@
+= How to run
+
+[source, bash]
+.*Run From Source Code*
+----
+go mod init github.com/kylinsoong/golang/nim-mock
+go mod tidy
+go run cmd/nim-mock/main.go --tls-certificate=$(pwd)/cert/certificate.crt --tls-private=$(pwd)/cert/private.key
+----
+
+[source, bash]
+.*Build Source Code & Run locally*
+----
+go mod init github.com/kylinsoong/golang/nim-mock
+go mod tidy
+go build -o nim-mock -ldflags "-X main.version=1.0.0" cmd/nim-mock/*.go
+./nim-mock --tls-certificate=$(pwd)/cert/certificate.crt --tls-private=$(pwd)/cert/private.key
+----
+
+[source, bash]
+.*Build Source Code to Docker Image & Run locally*
+----
+docker build -t cloudadc/nim-mock:0.1 -f Dockerfile .
+docker run -it --rm -p 443:443 cloudadc/nim-mock:0.1
+
+// build docker image & run (arm64)
+docker build -t cloudadc/nim-mock:0.1-arm64 -f Dockerfile.arm64 .
+docker run -it --rm -p 443:443 cloudadc/nim-mock:0.1-arm64 
+----
+
