@@ -95,7 +95,8 @@ func main() {
 
     r := mux.NewRouter()
 
-    r.HandleFunc("/users/{id}", mock.GetUserHandler).Methods("GET")
+    r.HandleFunc("/api/platform/v1/instance-groups/summary", mock.GetInstanceGroupsSummary).Methods("GET")
+    r.HandleFunc("/api/platform/v1/instance-groups/{uid}/config", mock.InstanceGroupsConfig).Methods("GET", "POST")
 
     cert, err := tls.LoadX509KeyPair(*tls_certificate, *tls_private)
     if err != nil {

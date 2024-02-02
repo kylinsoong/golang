@@ -28,3 +28,26 @@ docker build -t cloudadc/nim-mock:0.1-arm64 -f Dockerfile.arm64 .
 docker run -it --rm -p 443:443 cloudadc/nim-mock:0.1-arm64 
 ----
 
+
+== Supported API
+
+=== /api/platform/v1/instance-groups/summary
+
+[source, bash]
+----
+curl -k -s -u "admin:admin" -X GET https://127.0.0.1/api/platform/v1/instance-groups/summary -H "accept: application/json"
+----
+
+=== /api/platform/v1/instance-groups/{uid}/config
+
+[source, bash]
+.*POST*
+----
+curl -k -s -u "admin:admin" -X POST https://127.0.0.1/api/platform/v1/instance-groups/c78208d2-f017-4a48-bab9-f2dc2432b8c9/config -H "accept: application/json"  -H 'Content-Type: application/json' -d "@config.json"
+----
+
+[source, bash]
+.*GET*
+----
+curl -k -s -u "admin:admin" -X GET https://127.0.0.1/api/platform/v1/instance-groups/c78208d2-f017-4a48-bab9-f2dc2432b8c9/config -H "accept: application/json" 
+----
