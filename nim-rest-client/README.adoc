@@ -1,0 +1,21 @@
+= How to run
+
+[source, bash]
+.*Run From Source Code*
+----
+go mod init github.com/kylinsoong/golang/rest-client
+go mod tidy
+go run cmd/rest-client/main.go --url=127.0.0.1 --username=admin --password=admin
+----
+
+[source, bash]
+.*Build Source Code & Run locally*
+----
+go mod init github.com/kylinsoong/golang/rest-client
+go mod tidy
+go build -o rest-client -ldflags "-X main.version=1.0.0" cmd/rest-client/*.go
+./rest-client --url=127.0.0.1 --username=admin --password=admin
+----
+
+
+

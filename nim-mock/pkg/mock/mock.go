@@ -16,7 +16,7 @@ import (
 
 func GetInstanceGroupsSummary(w http.ResponseWriter, r *http.Request){
 
-    log.Infof("Received request from %s for %s", r.RemoteAddr, r.URL.Path)
+    log.Infof("Received %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
 
     response := LoadInstanceGroups{
 	Count: 2,
@@ -46,12 +46,45 @@ func GetInstanceGroupsSummary(w http.ResponseWriter, r *http.Request){
     w.Write(jsonResponse)
 }
 
+func GetInstanceGroupsDeployments(w http.ResponseWriter, r *http.Request){
+    vars := mux.Vars(r)
+    uid := vars["uid"]
+    log.Infof("Received %s request from %s for %s, instance-group ID: %s", r.Method, r.RemoteAddr, r.URL.Path, uid)
+    
+    deploymentDetail := DeploymentDetail{
+        Failure: []InstanceStatus{},
+        Pending: []InstanceActivityStatus{},
+        Success: []InstanceStatus{
+            {Name: "server-c.com",},
+            {Name: "server-d.com",},
+        },
+    }
+
+    response := DeploymentDetails{
+        CreateTime:    time.Now(),
+        Details:       deploymentDetail,
+        ID:            "f68f185c-04ea-46d7-9025-b293a06fe961",
+        Message:       "Instance Group config successfully published to qywy",
+        Status:        "successful",
+        UpdateTime:    time.Now(),
+    }
+
+    jsonResponse, err := json.Marshal(response)
+    if err != nil {
+        http.Error(w, "Error creating JSON response", http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(jsonResponse)    
+}
+
 func InstanceGroupsConfig(w http.ResponseWriter, r *http.Request){
 
     vars := mux.Vars(r)
     uid := vars["uid"]
 
-    log.Infof("Received request from %s for %s, instance-group ID: %s", r.RemoteAddr, r.URL.Path, uid)
+    log.Infof("Received %s request from %s for %s, instance-group ID: %s", r.Method, r.RemoteAddr, r.URL.Path, uid)
 
     switch r.Method {
     case http.MethodGet:
@@ -151,7 +184,22 @@ func InstanceGroupsConfig(w http.ResponseWriter, r *http.Request){
         }
         log.Infof("Request Body: \n%+v", prettyJSON.String())
 
-        w.WriteHeader(http.StatusNoContent)
+        selfLinks := SelfLinks{
+            Rel: "/api/platform/v1/instance-groups/deployments/09aa57d6-bff8-437e-9796-4f5308c454b0",
+        }
+        publishConfigResponse := PublishConfigResponse{
+            DeploymentUID: "09aa57d6-bff8-437e-9796-4f5308c454b0",
+            Links:         selfLinks,
+            Result:        "Publish group configuration request Accepted",
+        }
+
+        jsonResponse, err := json.Marshal(publishConfigResponse)
+        if err != nil {
+            http.Error(w, "Error creating JSON response", http.StatusInternalServerError)
+            return
+        }
+        w.Header().Set("Content-Type", "application/json")
+        w.Write(jsonResponse)
     default:
         http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
     }

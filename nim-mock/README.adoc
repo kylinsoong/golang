@@ -51,3 +51,11 @@ curl -k -s -u "admin:admin" -X POST https://127.0.0.1/api/platform/v1/instance-g
 ----
 curl -k -s -u "admin:admin" -X GET https://127.0.0.1/api/platform/v1/instance-groups/c78208d2-f017-4a48-bab9-f2dc2432b8c9/config -H "accept: application/json" 
 ----
+
+=== /api/platform/v1/instance-groups/deployments/{uid}
+
+[source, bash]
+.*GET*
+----
+curl -k -s -u "admin:admin" -X GET https://127.0.0.1/api/platform/v1/instance-groups/deployments/09aa57d6-bff8-437e-9796-4f5308c454b0 -H "accept: application/json"
+----
