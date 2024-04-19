@@ -1,4 +1,9 @@
-= How to run
+= What's this
+:toc: manual
+
+This project facilitates quick debugging of CIS by setting up Kubernetes, VE, and CIS externally from Kubernetes. It allows running the source code directly and provides a friendly debugging environment.
+
+== CIS 2.9.1
 
 [source, bash]
 .*1. Use kubekey to create a K8S Cluster*
@@ -133,3 +138,35 @@ Please look out to serverAddresses section:
 ----
 
 NOTE: the VS not be changed, and the pool member be deleted.
+
+== CIS 2.16
+
+Use same steps in *CIS 2.9.1* to create a K8S Cluster ans set up Mock As3 Service.
+
+[source, bash]
+.*1. Start CIS*
+----
+cd k8s-bigip-ctlr-2.16.0
+go mod tidy
+go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=127.0.0.1 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/src/golang/bigip-ctlr/config --namespace=f5-hub-1 --namespace=f5-hub-2 --node-poll-interval=300 --periodic-sync-interval=36000 --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/src/cis/k8s-bigip-ctlr-2.16.0-debug/schemas/
+----
+
+NOTE: Source code can be download from https://github.com/F5Networks/k8s-bigip-ctlr/archive/refs/tags/v2.16.0.zip
+
+NOTE: `config` file should be copy from K8S Host.
+
+NOTE: Comment out lines in `cmd/k8s-bigip-ctlr/main.go` from 1119 to 1152.
+
+Use same steps in *CIS 2.9.1* to deploy app, configmap, and use iptables to make api server temporary unavailable.
+
+[source, bash]
+.*2. Review the CIS log and AS3 Mock service log*
+----
+2024/04/19 16:00:07 [ERROR] [CORE] Error getting service list. Get "https://10.1.10.137:6443/api/v1/services?labelSelector=cis.f5.com%2Fas3-tenant%3Dcistest001%2Ccis.f5.com%2Fas3-app%3Dapp-1%2Ccis.f5.com%2Fas3-pool%3Dapp_1_svc_pool": dial tcp 10.1.10.137:6443: connect: connection refused
+2024/04/19 16:00:36 [ERROR] [CORE] Error getting service list. Get "https://10.1.10.137:6443/api/v1/services?labelSelector=cis.f5.com%2Fas3-tenant%3Dcistest001%2Ccis.f5.com%2Fas3-app%3Dapp-1%2Ccis.f5.com%2Fas3-pool%3Dapp_1_svc_pool": dial tcp 10.1.10.137:6443: connect: connection refused
+2024/04/19 16:01:06 [ERROR] [CORE] Error getting service list. Get "https://10.1.10.137:6443/api/v1/services?labelSelector=cis.f5.com%2Fas3-tenant%3Dcistest001%2Ccis.f5.com%2Fas3-app%3Dapp-1%2Ccis.f5.com%2Fas3-pool%3Dapp_1_svc_pool": dial tcp 10.1.10.137:6443: connect: connection refused
+2024/04/19 16:01:36 [ERROR] [CORE] Error getting service list. Get "https://10.1.10.137:6443/api/v1/services?labelSelector=cis.f5.com%2Fas3-tenant%3Dcistest001%2Ccis.f5.com%2Fas3-app%3Dapp-1%2Ccis.f5.com%2Fas3-pool%3Dapp_1_svc_pool": dial tcp 10.1.10.137:6443: connect: connection refused
+2024/04/19 16:02:06 [ERROR] [CORE] Error getting service list. Get "https://10.1.10.137:6443/api/v1/services?labelSelector=cis.f5.com%2Fas3-tenant%3Dcistest001%2Ccis.f5.com%2Fas3-app%3Dapp-1%2Ccis.f5.com%2Fas3-pool%3Dapp_1_svc_pool": dial tcp 10.1.10.137:6443: connect: connection refused
+---- 
+
+NOTE: No empty member post payload be push to AS3. The CIS log hints errors.
