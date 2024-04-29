@@ -95,7 +95,9 @@ func main() {
 
     http.HandleFunc("/mgmt/shared/appsvcs/info", rest.HandleGetInfo)
     http.HandleFunc("/mgmt/shared/appsvcs/declare/", rest.HandlePostRequest)
+    http.HandleFunc("/mgmt/shared/authn/login", rest.HandlePostRequestAuthToken)
     http.HandleFunc("/mgmt/tm/shared/licensing/registration", rest.HandleGetRegistration)
+    http.HandleFunc("/mgmt/tm/sys/", rest.HandleGetTMOSSys)
 
     cert, err := tls.LoadX509KeyPair(*tls_certificate, *tls_private)
     if err != nil {

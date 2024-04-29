@@ -20,12 +20,12 @@ go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
 [source, bash]
 .*Build Source Code to Docker Image & Run locally*
 ----
-docker build -t cloudadc/as3-mock:0.1 -f Dockerfile .
-docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1
+docker build -t cloudadc/as3-mock:0.2 -f Dockerfile .
+docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2
 
 // build docker image & run (arm64)
-docker build -t cloudadc/as3-mock:0.1-arm64 -f Dockerfile.arm64 .
-docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1-arm64 
+docker build -t cloudadc/as3-mock:0.2-arm64 -f Dockerfile.arm64 .
+docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2-arm64 
 ----
 
 == Current Supported API
@@ -34,7 +34,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1-arm64
 
 [source, bash]
 ----
-% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/tm/shared/licensing/registration 
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.2/mgmt/tm/shared/licensing/registration 
 {
   "vendor": "F5 Networks, Inc.",
   "licensedDateTime": "2024-01-10T00:00:00-08:00",
@@ -49,7 +49,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1-arm64
 
 [source, bash]
 ----
-% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/shared/appsvcs/info
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.2/mgmt/shared/appsvcs/info
 {
   "version": "3.36.1",
   "release": "1",
@@ -62,7 +62,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1-arm64
 
 [source, bash]
 ----
-% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/emptyAS3Declaration.json https://127.0.0.1/mgmt/shared/appsvcs/declare/cistest002 
+% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/emptyAS3Declaration.json https://127.0.0.2/mgmt/shared/appsvcs/declare/cistest002 
 {
   "declaration": {
     "class": "ADC",
@@ -81,3 +81,299 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.1-arm64
 }
 ----
 
+=== /mgmt/shared/authn/login
+
+[source, bash]
+----
+% curl -sk https://127.0.0.2/mgmt/shared/authn/login -X POST -H "Content-Type: application/json"  -d '{"username":"admin", "password":"F5demo@666", "loginProviderName":"tmos"}'
+{
+  "username": "admin",
+  "loginReference": {
+    "link": ""
+  },
+  "loginProviderName": "tmos",
+  "token": {
+    "token": "QLLJFAT5DHOGEGE2XCAX6ZBEKA",
+    "name": "QLLJFAT5DHOGEGE2XCAX6ZBEKA",
+    "userName": "admin",
+    "authProviderName": "tmos",
+    "user": {
+      "link": "https://localhost/mgmt/shared/authz/users/admin"
+    },
+    "timeout": 1200,
+    "startTime": "2024-04-29T19:17:15.460+0800",
+    "address": "10.2.10.240",
+    "partition": "[All]",
+    "generation": 1,
+    "lastUpdateMicros": 1714389435460230,
+    "expirationMicros": 1814390635460000,
+    "kind": "shared:authz:tokens:authtokenitemstate",
+    "selfLink": "https://localhost/mgmt/shared/authz/tokens/QLLJFAT5DHOGEGE2XCAX6ZBEKA"
+  },
+  "generation": 0,
+  "lastUpdateMicros": 0
+}
+----
+
+=== /mgmt/tm/sys/
+
+[source, bash]
+----
+% curl -sk https://127.0.0.1/mgmt/tm/sys/
+{
+  "kind": "tm:sys:syscollectionstate",
+  "selfLink": "https://localhost/mgmt/tm/sys?ver=15.1.10",
+  "items": [
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/application?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/crypto?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/daemon-log-settings?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/diags?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/disk?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/dynad?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/ecm?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/file?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/fpga?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/icall?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/log-config?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/pfman?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/sflow?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/software?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/turboflex?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/url-db?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/aom?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/autoscale-group?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/cluster?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/config?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/core?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/daemon-ha?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/datastor?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/db?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/dns?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/feature-module?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/folder?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/global-settings?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/ha-group?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/httpd?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/icontrol-soap?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/internal-proxy?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/log-rotate?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/management-dhcp?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/management-ip?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/management-ovsdb?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/management-proxy-config?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/management-route?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/ntp?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/outbound-smtp?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/provision?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/scriptd?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/service?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/smtp-server?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/snmp?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/sshd?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/state-mirroring?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/syslog?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/telemd?ver=15.1.10"
+      }
+    },
+    {
+      "reference": {
+        "link": "https://localhost/mgmt/tm/sys/ucs?ver=15.1.10"
+      }
+    }
+  ]
+}
+----
