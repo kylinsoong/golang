@@ -1,0 +1,880 @@
+[
+ {
+   "name": "client-go",
+   "version": "v11.0.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "evanphx/json-patch",
+  "version": "v4.5.0-4-ge83c0a1",
+  "license": "BSD 3",
+  "category": 3,
+  "status": "approved"
+},
+{
+  "name": "pkg/errors",
+  "version": "v0.8.1-24-g27936f6",
+  "license": "BSD 2",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "distribution",
+   "version": "2.5.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "glog",
+   "version": "0.0.1",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "go/codec",
+   "version": "0.0.1",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "go-bigip",
+   "version": "0.0.1",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "go-restful",
+   "version": "1.2.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "go-spew",
+   "version": "1.0.0",
+   "license": "ISC",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gofuzz",
+   "version": "0.0.1",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "groupcache",
+   "version": "0.0.1",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "inf.v0",
+   "version": "0.9.0",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "inf",
+   "version": "v0",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "mergo",
+   "version": "0.2.2",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "net",
+   "version": "1.7.0",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "pflag",
+   "version": "0.0.1",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "protobuf",
+   "version": "0.3.0",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "semver",
+   "version": "3.3.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "uuid",
+   "version": "1.0.0",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "yaml",
+   "version": "0.0.1",
+   "license": "MIT or BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "yaml.v2",
+   "version": "0.0.1",
+   "license": "Apache 2.0 and MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "ratelimit",
+   "version": "1.0.0",
+   "license": "LGPLv3",
+   "category": null,
+   "status": "approved"
+ },
+ {
+   "name": "pyinotify",
+   "version": " ",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gojsonschema",
+   "version": " ",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gojsonreference",
+   "version": " ",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gojsonpointer",
+   "version": " ",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gocloud",
+   "version": "3b1ae45394a234c385be014e9a488f2bb6eef821",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "purell",
+   "version": "8a290539e2e8629dbc4e6bad948158f790ec31f4",
+   "license": "BSD 3-clause",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "urlesc",
+   "version": "5bd2802263f21d8788851d5305584c82a5c75d7e",
+   "license": "BSD 3-clause",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "time",
+  "version": "9d24e82",
+  "license": "BSD 3-clause",
+  "category": 3,
+  "status": "approved"
+ },
+ {
+   "name": "go-oidc",
+   "version": "5644a2f50e2d2d5ba0b474bc5bc55fea1925936d",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "pkg",
+   "version": "fa29b1d70f0beaddd4c7021607cc3c3be8ce94b8",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "jsonreference",
+   "version": "13c6e3589ad90f49bd3e3bbe2c2cb3d7a4142272",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "jsonpointer",
+   "version": "46af16f9f7b149af66e5d1bd010e3574dc06de98",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gopass",
+   "version": "3ca23474a7c7203e0a0a070fd33508f6efdb9b3d",
+   "license": "ISC",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "clockwork",
+   "version": "72f9bd7c4e0c2a40055ab3d0f09654f730cce982",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "easyjson",
+   "version": "d5b7844b561a7bc640052f1b935f7b800330d7e0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "crypto",
+   "version": "1f22c0103821b9390939b6776727195525381532",
+   "license": "BSD 3-clause",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "oauth2",
+   "version": "3c3a985cb79f52a3190fbc056984415ca6763d01",
+   "license": "BSD 3-clause",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "text",
+   "version": "v0.3.0-69-ge6919f6",
+   "license": "BSD 3-clause",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "groupcache",
+   "version": " ",
+   "license": "Apache-2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "protobuf",
+   "version": " ",
+   "license": "BSD",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "utils",
+  "version": "3d4f5b7",
+  "license": "Apache-2.0",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "sys",
+   "version": " ",
+   "license": "BSD",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "appengine",
+   "version": " ",
+   "license": "Apache-2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "apimachinery",
+   "version": "kubernetes-1.14.1-beta.0",
+   "license": "Apache-2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "api",
+  "version": "kubernetes-1.14.1-beta.0",
+  "license": "Apache-2.0",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "miekg/dns",
+   "version": " ",
+   "license": "BSD-3-Clause",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "urllib3",
+   "version": "1.23",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "yaml",
+  "version": "v1.1.0-18-g4cd0c28",
+  "license": "MIT",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "beorn7/perks",
+   "version": "4c0e845",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "blang/semver",
+   "version": "v3.5.0-3-g4a1e882",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "crypto",
+   "version": "d172538",
+   "license": "BSD",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "f5-cccl",
+   "version": "0.1.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "-e git+https://github.com/f5devcentral/f5-cccl.git@b0b2ead3140eae1775110b432bc2a1247f90d397#egg=f5_cccl",
+   "version": "0.1.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "f5-icontrol-rest",
+   "version": "1.3.4",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "functools32",
+   "version": "3.2.3.post2",
+   "license": "Python (PSF) v2",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "ipaddress",
+   "version": "1.0.17",
+   "license": "Python (PSF) v2",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "jsonschema",
+   "version": "2.6.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "modern-go/concurrent",
+  "version": "1.0.3",
+  "license": "Apache 2.0",
+  "category": 3,
+  "status": "approved"
+ },
+ {
+  "name": "modern-go/reflect2",
+  "version": "v1.0.1",
+  "license": "Apache 2.0",
+  "category": 3,
+  "status": "approved"
+ },
+ {
+   "name": "matttproud/golang_protobuf_extensions",
+   "version": "v1.0.1",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "netaddr",
+   "version": "0.7.19",
+   "license": "BSD",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "onsi/ginkgo",
+   "version": "v1.4.0-3",
+   "license": "MIT",
+   "category": 5,
+   "status": "approved"
+ },
+ {
+   "name": "onsi/ginkgo",
+   "version": "v1.4.0-3-g8382b23",
+   "license": "MIT",
+   "category": 5,
+   "status": "approved"
+ },
+ {
+   "name": "onsi/gomega",
+   "version": "v1.2.0",
+   "license": "MIT",
+   "category": 5,
+   "status": "approved"
+ },
+ {
+   "name": "openshift/api",
+   "version": "v3.9.0-682-g763878ba",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "openshift/client-go",
+   "version": "5a55083",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "prometheus/client_golang",
+   "version": "v0.8.0-96",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "prometheus/client_golang",
+   "version": "v0.8.0-96-g95b6848",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "prometheus/client_model",
+   "version": "0.0.2-14",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "prometheus/client_model",
+   "version": "model-0.0.2-14-g6f38060",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "prometheus/common",
+   "version": "3e6a763",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "prometheus/procfs",
+   "version": "e645f4e",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "PyJWT",
+   "version": "1.4.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "PyYAML",
+   "version": "3.12",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "requests",
+   "version": "2.9.1",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "simplejson",
+   "version": "3.10.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "Sirupsen/logrus",
+   "version": "1.0.2-6",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "six",
+   "version": "1.12.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "sseclient",
+   "version": "0.0.14",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "chardet",
+   "version": " ",
+   "license": "LGPL v2.1",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "f5-icontrol-rest",
+   "version": "1.3.11",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "googleapis/gnostic",
+  "version": "v0.3.1-4-g635450e",
+  "license": "Apache 2.0",
+  "category": 3,
+  "status": "approved"
+},
+{
+  "name": "hashicorp/golang-lru",
+  "version": "v0.5.3",
+  "license": "MPL-2.0",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "f5-sdk",
+   "version": "3.0.3",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "gogo/protobuf",
+   "version": "v1.3.0-4-g23325ce4",
+   "license": "BSD",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "golang/groupcache",
+   "version": "b710c84",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "golang/protobuf",
+   "version": "v1.3.2-2-g822fe569",
+   "license": "BSD",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "google/gofuzz",
+   "version": "44d8105",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "klog",
+  "version": "v0.3.0",
+  "license": "Apache 2.0",
+  "category": 3,
+  "status": "approved"
+},
+{
+  "name": "kube-openapi",
+  "version": "743ec37",
+  "license": "Apache 2.0",
+  "category": 3,
+  "status": "approved"
+},
+{
+  "name": "json-iterator/go",
+  "version": "v1.1.7",
+  "license": "BSD 3",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "miekg/dns",
+   "version": "e420576",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "net",
+   "version": "cdfb69a",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "oauth2",
+  "version": "0f29369",
+  "license": "BSD 3",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "pyinotify",
+   "version": "0.9.6",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "spf13/pflag",
+   "version": "9ff6c69",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "sys",
+   "version": "8f0908a",
+   "license": "BSD 3",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "xeipuuv/gojsonpointer",
+   "version": "e0fe6f6",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+  "name": "imdario/mergo",
+  "version": "v0.3.5",
+  "license": "BSD 3",
+  "category": 3,
+  "status": "approved"
+},
+ {
+   "name": "xeipuuv/gojsonreference",
+   "version": "e02fc20",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "xeipuuv/gojsonschema",
+   "version": "v1.1.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "davecgh/go-spew",
+   "version": "5215b55",
+   "license": "ISC",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "f5-ctlr-agent",
+   "version": "0.1.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "yaml",
+   "version": "v2",
+   "license": "Apache 2.0 and MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "jsonpatch",
+   "version": "1.16",
+   "license": "Modified BSD License",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "jsonpointer",
+   "version": "2.0",
+   "license": "BSD License",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "asn1crypto",
+   "version": "0.24.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "certifi",
+   "version": "2018.11.29",
+   "license": "MPL 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "cffi",
+   "version": "1.12.1",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+
+ {
+   "name": "chardet",
+   "version": "3.0.4",
+   "license": "LGPL",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "cryptography",
+   "version": "2.5",
+   "license": "BSD License",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "enum34",
+   "version": "1.1.6",
+   "license": "BSD License",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "idna",
+   "version": "2.7",
+   "license": "BSD License",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "pycparser",
+   "version": "2.19",
+   "license": "BSD License",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "pyOpenSSL",
+   "version": "17.5.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "PyYAML",
+   "version": "4.2b1",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "requests",
+   "version": "2.20.0",
+   "license": "Apache 2.0",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "urllib3",
+   "version": "1.24.1",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "urllib3",
+   "version": "1.24.2",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+
+ {
+   "name": "attrs",
+   "version": "18.2.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "cffi",
+   "version": "1.12.2",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "jsonschema",
+   "version": "3.0.0",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ },
+ {
+   "name": "pyrsistent",
+   "version": "0.14.11",
+   "license": "MIT",
+   "category": 3,
+   "status": "approved"
+ }
+
+]
