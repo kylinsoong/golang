@@ -25,7 +25,7 @@ import (
 	"github.com/F5Networks/k8s-bigip-ctlr/pkg/teem"
 
 	"github.com/F5Networks/k8s-bigip-ctlr/pkg/controller"
-	"github.com/F5Networks/k8s-bigip-ctlr/pkg/health"
+	//"github.com/F5Networks/k8s-bigip-ctlr/pkg/health"
 	"github.com/F5Networks/k8s-bigip-ctlr/pkg/pollers"
 	bigIPPrometheus "github.com/F5Networks/k8s-bigip-ctlr/pkg/prometheus"
 	"github.com/F5Networks/k8s-bigip-ctlr/pkg/vxlan"
@@ -895,6 +895,9 @@ func main() {
 		os.Exit(1)
 	}
 
+        version := "2.9.1-1"
+        buildInfo := "cloud-machine"
+        
 	log.Infof("[INIT] Starting: Container Ingress Services - Version: %s, BuildInfo: %s", version, buildInfo)
 
 	resource.DEFAULT_PARTITION = (*bigIPPartitions)[0]
@@ -1029,6 +1032,7 @@ func main() {
 	if *ccclLogLevel != "" {
 		gs.LogLevel = *ccclLogLevel
 	}
+/*
 	bs := bigIPSection{
 		BigIPUsername:   *bigIPUsername,
 		BigIPPassword:   *bigIPPassword,
@@ -1054,7 +1058,7 @@ func main() {
 			}
 		}
 	}(subPid)
-
+*/
 	if _, isSet := os.LookupEnv("SCALE_PERF_ENABLE"); isSet {
 		now := time.Now()
 		log.Infof("[INIT] SCALE_PERF: Started controller at: %d", now.Unix())
@@ -1119,11 +1123,13 @@ func main() {
 	setupWatchers(appMgr, time.Duration(*syncInterval)*time.Second)
 	// Expose Prometheus metrics
 	http.Handle("/metrics", promhttp.Handler())
+/*
 	// Add health check e.g. is Python process still there?
 	hc := &health.HealthChecker{
 		SubPID: subPid,
 	}
 	http.Handle("/health", hc.HealthCheckHandler())
+*/
 	bigIPPrometheus.RegisterMetrics()
 	go func() {
 		log.Fatal(http.ListenAndServe(*httpAddress, nil).Error())

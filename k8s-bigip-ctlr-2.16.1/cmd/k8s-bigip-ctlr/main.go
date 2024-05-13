@@ -980,6 +980,9 @@ func main() {
 		os.Exit(1)
 	}
 
+        version := "2.16.1"
+        buildInfo := "cloud-machine"
+
 	log.Infof("[INIT] Starting: Container Ingress Services - Version: %s, BuildInfo: %s", version, buildInfo)
 	// add the warning if both extended-config-map & route-config-map are present
 	if len(*routeSpecConfigmap) > 0 && len(*extendedSpecConfigmap) > 0 {
@@ -1116,6 +1119,7 @@ func main() {
 		if *ccclLogLevel != "" {
 			gs.LogLevel = *ccclLogLevel
 		}
+/*
 		bs := bigIPSection{
 			BigIPUsername:   *bigIPUsername,
 			BigIPPassword:   *bigIPPassword,
@@ -1147,6 +1151,7 @@ func main() {
 			SubPID: subPid,
 		}
 		http.Handle("/health", hc.HealthCheckHandler())
+*/
 	} else { // a new health checker for nodeport and nodeportlocal mode for AS3
 		hc := &health.HealthChecker{}
 		http.Handle("/health", hc.CISHealthCheckHandler(kubeClient))
