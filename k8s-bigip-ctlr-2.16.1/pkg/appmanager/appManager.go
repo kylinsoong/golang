@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"net"
 	"reflect"
 	"sort"
@@ -28,6 +27,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/F5Networks/k8s-bigip-ctlr/v2/pkg/vxlan"
 	"github.com/F5Networks/k8s-bigip-ctlr/v2/pkg/writer"
@@ -338,7 +339,7 @@ const (
 	Secrets        = "secrets"
 	IngressClasses = "ingressclasses"
 
-	hubModeInterval  = 30 * time.Second //Hubmode ConfigMap resync interval
+	//hubModeInterval  = 30 * time.Second //Hubmode ConfigMap resync interval
 	NPLPodAnnotation = "nodeportlocal.antrea.io"
 	NPLSvcAnnotation = "nodeportlocal.antrea.io/enabled"
 	// CNI
@@ -860,9 +861,9 @@ func (appMgr *Manager) newAppInformer(
 		log.Infof("[CORE] Watching ConfigMap resources.")
 		//If Hubmode is enabled, process configmaps every 30 seconds to process unwatched namespace deployments
 		syncInterval := resyncPeriod
-		if appMgr.hubMode {
-			syncInterval = hubModeInterval
-		}
+		//if appMgr.hubMode {
+		//	syncInterval = hubModeInterval
+		//}
 		appInf.cfgMapInformer = cache.NewSharedIndexInformer(
 			cache.NewFilteredListWatchFromClient(
 				appMgr.restClientv1,
@@ -902,9 +903,9 @@ func (appMgr *Manager) newAppInformer(
 		log.Infof("[CORE] Handling ConfigMap resource events.")
 		// If Hubmode is enabled, process configmaps every 30 seconds to process unwatched namespace deployments
 		syncInterval := resyncPeriod
-		if appMgr.hubMode {
-			syncInterval = hubModeInterval
-		}
+		//if appMgr.hubMode {
+		//	syncInterval = hubModeInterval
+		//}
 		appInf.cfgMapInformer.AddEventHandlerWithResyncPeriod(
 			&cache.ResourceEventHandlerFuncs{
 				AddFunc: func(obj interface{}) { appMgr.enqueueConfigMap(obj, OprTypeCreate) },
