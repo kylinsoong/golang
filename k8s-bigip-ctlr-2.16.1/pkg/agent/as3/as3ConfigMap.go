@@ -2,6 +2,7 @@ package as3
 
 import (
 	"encoding/json"
+
 	. "github.com/F5Networks/k8s-bigip-ctlr/v2/pkg/resource"
 	log "github.com/F5Networks/k8s-bigip-ctlr/v2/pkg/vlogger"
 )
@@ -192,7 +193,7 @@ func (am *AS3Manager) processCfgMap(rscCfgMap *AgentCfgMap) (
 			appObj := tenantObj[string(app)].(map[string]interface{})
 			for _, pn := range pools {
 				poolObj := appObj[string(pn)].(map[string]interface{})
-				eps, err := rscCfgMap.GetEndpoints(am.getSelector(tnt, app, pn), rscCfgMap.Namespace)
+				eps, err := rscCfgMap.GetEndpoints(am.getSelector(tnt, app, pn), string(tnt))
 				// If there is some error while fetching the endpoint from API server then skip processing further
 				if nil != err {
 					return nil, nil, err

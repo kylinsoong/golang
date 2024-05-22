@@ -3362,11 +3362,21 @@ func (appMgr *Manager) getEndpoints(selector, namespace string) ([]Member, error
 	var members []Member
 	uniqueMembersMap := make(map[Member]struct{})
 
-	appInf, _ := appMgr.getNamespaceInformer(namespace)
+	appInf, found := appMgr.getNamespaceInformer(namespace)
 
 	var svcItems []v1.Service
 
-	if appMgr.hubMode {
+	if found {
+		svcInformer := appInf.svcInformer
+		svcLister := listerscorev1.NewServiceLister(svcInformer.GetIndexer())
+		ls, _ := createLabel(selector)
+		svcListed, _ := svcLister.Services(namespace).List(ls)
+
+		for n, _ := range svcListed {
+			svcItems = append(svcItems, *svcListed[n])
+		}
+		log.Debugf("[CORE] Extract service via watch-list informer '%v'", svcInformer)
+	} else if appMgr.hubMode {
 		// Leaving the old way for hubMode for now.
 		svcListOptions := metav1.ListOptions{
 			LabelSelector: selector,
@@ -3383,16 +3393,9 @@ func (appMgr *Manager) getEndpoints(selector, namespace string) ([]Member, error
 			return nil, err
 		}
 		svcItems = services.Items
+		log.Debugf("[CORE] Query service via '%v'", selector)
 	} else {
-		svcInformer := appInf.svcInformer
-		svcLister := listerscorev1.NewServiceLister(svcInformer.GetIndexer())
-		ls, _ := createLabel(selector)
-		svcListed, _ := svcLister.Services(namespace).List(ls)
-
-		for n, _ := range svcListed {
-			svcItems = append(svcItems, *svcListed[n])
-		}
-
+		log.Errorf("[CORE] Can not found informer for %s", namespace)
 	}
 
 	if len(svcItems) > 1 {

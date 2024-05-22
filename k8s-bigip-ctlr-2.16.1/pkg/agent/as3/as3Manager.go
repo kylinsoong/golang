@@ -572,6 +572,7 @@ func (am *AS3Manager) ConfigDeployer() {
 		case msgReq = <-am.ReqChan:
 		case <-time.After(1 * time.Microsecond):
 		}
+		log.Infof("[AS3] --> Receive message from %v, ReqID: %d, MsgType: %s, ResourceRequest: %v", am.ReqChan, msgReq.ReqID, msgReq.MsgType, msgReq.ResourceRequest.AgentCfgmaps)
 		posted, event, err := am.postAS3Declaration(msgReq.ResourceRequest)
 		// Skip processing further if error is encountered during preparing and posting of AS3 declaration
 		if err != nil {
