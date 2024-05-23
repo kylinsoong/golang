@@ -1,3 +1,7 @@
+= bigip container codebase debug 
+:toc: manual
+
+== Run Local
 
 [source, bash]
 .*Run 2.9.1*
@@ -9,4 +13,10 @@ go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --b
 .*Run 2.16.1*
 ----
 go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=192.168.72.100 --log-level=INFO --running-in-cluster=false --kubeconfig=/Users/k.song/src/golang/config --namespace=f5-hub-1 --namespace=f5-hub-2 --node-poll-interval=300 --periodic-sync-interval=36000 --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/src/golang/k8s-bigip-ctlr-2.16.1/schemas/
+----
+
+[source, bash]
+.*Run 2.16.1 - namespace*
+----
+go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=127.0.0.1 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/src/golang/config --namespace=f5-hub-1 --namespace=cistest001 --namespace=cistest002 --namespace=cistest003 --node-poll-interval=3600 --periodic-sync-interval=3600 --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --hubmode=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/src/golang/k8s-bigip-ctlr-2.16.1/schemas/
 ----

@@ -3362,11 +3362,11 @@ func (appMgr *Manager) getEndpoints(selector, namespace string) ([]Member, error
 	var members []Member
 	uniqueMembersMap := make(map[Member]struct{})
 
-	appInf, found := appMgr.getNamespaceInformer(namespace)
+	appInf, nsHasInformer := appMgr.getNamespaceInformer(namespace)
 
 	var svcItems []v1.Service
 
-	if found {
+	if nsHasInformer {
 		svcInformer := appInf.svcInformer
 		svcLister := listerscorev1.NewServiceLister(svcInformer.GetIndexer())
 		ls, _ := createLabel(selector)
@@ -3375,7 +3375,7 @@ func (appMgr *Manager) getEndpoints(selector, namespace string) ([]Member, error
 		for n, _ := range svcListed {
 			svcItems = append(svcItems, *svcListed[n])
 		}
-		log.Debugf("[CORE] Extract service via watch-list informer '%v'", svcInformer)
+		log.Debugf("[CORE] Extract service via watch-list informer '%s'", namespace)
 	} else if appMgr.hubMode {
 		// Leaving the old way for hubMode for now.
 		svcListOptions := metav1.ListOptions{
@@ -3412,7 +3412,41 @@ func (appMgr *Manager) getEndpoints(selector, namespace string) ([]Member, error
 	}
 
 	for _, service := range svcItems {
-		if appMgr.isNodePort == false && appMgr.poolMemberType != NodePortLocal { // Controller is in ClusterIP Mode
+		if appMgr.hubMode && !nsHasInformer {
+			var eps *v1.Endpoints
+			endpointsList, err := appMgr.kubeClient.CoreV1().Endpoints(service.Namespace).List(context.TODO(),
+				metav1.ListOptions{
+					FieldSelector: "metadata.name=" + service.Name,
+				},
+			)
+			if err != nil {
+				log.Debugf("[CORE] Error getting endpoints for service %v", service.Name)
+				return nil, err
+			}
+			if len(endpointsList.Items) == 0 {
+				log.Debugf("[CORE] Endpoints for service %v not found", service.Name)
+				continue
+			}
+			eps = &endpointsList.Items[0]
+
+			svcPorts := appMgr.getServicePortsFromEndpoint(eps)
+			for _, subset := range eps.Subsets {
+				for _, port := range subset.Ports {
+					for _, addr := range subset.Addresses {
+						member := Member{
+							Address: addr.IP,
+							Port:    port.Port,
+							SvcPort: appMgr.getServicePortFromTargetPort(svcPorts, port.Port),
+						}
+						if _, ok := uniqueMembersMap[member]; !ok {
+							uniqueMembersMap[member] = struct{}{}
+							members = append(members, member)
+						}
+					}
+				}
+			}
+
+		} else if appMgr.isNodePort == false && appMgr.poolMemberType != NodePortLocal { // Controller is in ClusterIP Mode
 			svcKey := service.Namespace + "/" + service.Name
 
 			item, found, _ := appInf.endptInformer.GetStore().GetByKey(svcKey)
