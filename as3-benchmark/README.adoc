@@ -29,13 +29,13 @@ for i in {1..10} ; do ./mul-tenants.sh ; done > mul-tenants/results
 [source, bash]
 .*one tenant*
 ----
-./results.py one-tenant/results 
+./one-tenant.py.py one-tenant/results 
 ----
 
 [source, bash]
 .*multiple tenants*
 ----
-./results.py mul-tenants/results
+./mul-tenants.py mul-tenants/results
 ----
 
 [cols="2,5a"]
