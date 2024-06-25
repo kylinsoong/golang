@@ -1,0 +1,243 @@
+ADD 1
+2024/06/25 14:16:10 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:16:10 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:16:17 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 834
+2024/06/25 14:16:17 [INFO] [MAIN] Total time taken: 6.625550291s
+DEL 1
+2024/06/25 14:16:19 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:16:19 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:16:27 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 1389
+2024/06/25 14:16:27 [INFO] [MAIN] Total time taken: 8.092746417s
+ADD 10
+2024/06/25 14:16:29 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:16:29 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:16:36 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 1223
+2024/06/25 14:16:36 [INFO] [MAIN] Total time taken: 7.563249125s
+DEL 10
+2024/06/25 14:16:38 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:16:38 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:16:45 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 1592
+2024/06/25 14:16:45 [INFO] [MAIN] Total time taken: 7.478866834s
+ADD 20
+2024/06/25 14:16:47 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:16:47 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:16:55 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2340
+2024/06/25 14:16:55 [INFO] [MAIN] Total time taken: 7.648367958s
+DEL 20
+2024/06/25 14:16:57 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:16:57 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:17:05 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2609
+2024/06/25 14:17:05 [INFO] [MAIN] Total time taken: 8.244361333s
+ADD 30
+2024/06/25 14:17:07 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:17:07 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:17:15 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 1659
+2024/06/25 14:17:15 [INFO] [MAIN] Total time taken: 7.892871166s
+DEL 30
+2024/06/25 14:17:17 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:17:17 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:17:25 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2130
+2024/06/25 14:17:25 [INFO] [MAIN] Total time taken: 8.49525125s
+ADD 40
+2024/06/25 14:17:27 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:17:27 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:17:36 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2798
+2024/06/25 14:17:36 [INFO] [MAIN] Total time taken: 9.107993708s
+DEL 40
+2024/06/25 14:17:38 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:17:38 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:17:47 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2998
+2024/06/25 14:17:47 [INFO] [MAIN] Total time taken: 8.918349375s
+ADD 50
+2024/06/25 14:17:49 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:17:49 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:17:57 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2376
+2024/06/25 14:17:57 [INFO] [MAIN] Total time taken: 8.600721833s
+DEL 50
+2024/06/25 14:18:00 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:18:00 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:18:10 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2713
+2024/06/25 14:18:10 [INFO] [MAIN] Total time taken: 10.352398125s
+ADD 60
+2024/06/25 14:18:12 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:18:12 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:18:23 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 3449
+2024/06/25 14:18:23 [INFO] [MAIN] Total time taken: 10.654901375s
+DEL 60
+2024/06/25 14:18:25 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:18:25 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:18:34 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 2695
+2024/06/25 14:18:34 [INFO] [MAIN] Total time taken: 8.973061333s
+ADD 70
+2024/06/25 14:18:36 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:18:36 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:18:47 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 3187
+2024/06/25 14:18:47 [INFO] [MAIN] Total time taken: 10.971673084s
+DEL 70
+2024/06/25 14:18:49 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:18:49 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:18:59 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 3552
+2024/06/25 14:18:59 [INFO] [MAIN] Total time taken: 9.682605333s
+ADD 80
+2024/06/25 14:19:00 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:19:00 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:19:10 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 3219
+2024/06/25 14:19:10 [INFO] [MAIN] Total time taken: 9.903609458s
+DEL 80
+2024/06/25 14:19:12 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:19:12 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:19:21 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 3259
+2024/06/25 14:19:21 [INFO] [MAIN] Total time taken: 9.107447958s
+ADD 90
+2024/06/25 14:19:23 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:19:23 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:19:36 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4536
+2024/06/25 14:19:36 [INFO] [MAIN] Total time taken: 12.377974291s
+DEL 90
+2024/06/25 14:19:37 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:19:37 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:19:46 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 3565
+2024/06/25 14:19:46 [INFO] [MAIN] Total time taken: 8.914914666s
+ADD 100
+2024/06/25 14:19:48 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:19:48 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:20:00 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4567
+2024/06/25 14:20:00 [INFO] [MAIN] Total time taken: 11.554810208s
+DEL 100
+2024/06/25 14:20:02 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:20:02 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:20:13 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4834
+2024/06/25 14:20:13 [INFO] [MAIN] Total time taken: 11.06846425s
+ADD 110
+2024/06/25 14:20:14 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:20:14 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:20:28 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4863
+2024/06/25 14:20:28 [INFO] [MAIN] Total time taken: 13.335475458s
+DEL 110
+2024/06/25 14:20:30 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:20:30 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:20:41 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4839
+2024/06/25 14:20:41 [INFO] [MAIN] Total time taken: 11.824913083s
+ADD 120
+2024/06/25 14:20:43 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:20:43 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:20:56 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4563
+2024/06/25 14:20:56 [INFO] [MAIN] Total time taken: 12.484115375s
+DEL 120
+2024/06/25 14:20:58 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:20:58 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:21:09 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4830
+2024/06/25 14:21:09 [INFO] [MAIN] Total time taken: 11.461823375s
+ADD 130
+2024/06/25 14:21:11 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:21:11 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:21:25 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 4827
+2024/06/25 14:21:25 [INFO] [MAIN] Total time taken: 13.944576292s
+DEL 130
+2024/06/25 14:21:27 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:21:27 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:21:39 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 5706
+2024/06/25 14:21:39 [INFO] [MAIN] Total time taken: 12.486187083s
+ADD 140
+2024/06/25 14:21:41 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:21:41 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:21:56 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 5245
+2024/06/25 14:21:56 [INFO] [MAIN] Total time taken: 15.194172834s
+DEL 140
+2024/06/25 14:21:58 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:21:58 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:22:10 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 5860
+2024/06/25 14:22:10 [INFO] [MAIN] Total time taken: 11.762072666s
+ADD 150
+2024/06/25 14:22:12 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:22:12 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:22:28 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 5536
+2024/06/25 14:22:28 [INFO] [MAIN] Total time taken: 15.282480583s
+DEL 150
+2024/06/25 14:22:30 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:22:30 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:22:42 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 5874
+2024/06/25 14:22:42 [INFO] [MAIN] Total time taken: 12.536444958s
+ADD 160
+2024/06/25 14:22:44 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:22:44 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:23:01 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 6234
+2024/06/25 14:23:01 [INFO] [MAIN] Total time taken: 16.887442917s
+DEL 160
+2024/06/25 14:23:03 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:23:03 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:23:17 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 6509
+2024/06/25 14:23:17 [INFO] [MAIN] Total time taken: 13.4320065s
+ADD 170
+2024/06/25 14:23:19 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:23:19 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:23:35 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 6705
+2024/06/25 14:23:35 [INFO] [MAIN] Total time taken: 16.149728667s
+DEL 170
+2024/06/25 14:23:37 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:23:37 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:23:49 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 5786
+2024/06/25 14:23:49 [INFO] [MAIN] Total time taken: 11.439853958s
+ADD 180
+2024/06/25 14:23:51 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:23:51 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:24:06 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 6882
+2024/06/25 14:24:06 [INFO] [MAIN] Total time taken: 15.486555208s
+DEL 180
+2024/06/25 14:24:08 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:24:08 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:24:22 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 7092
+2024/06/25 14:24:22 [INFO] [MAIN] Total time taken: 13.433459084s
+ADD 190
+2024/06/25 14:24:24 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:24:24 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:24:43 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 7586
+2024/06/25 14:24:43 [INFO] [MAIN] Total time taken: 18.798486417s
+DEL 190
+2024/06/25 14:24:44 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:24:45 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:24:58 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 6789
+2024/06/25 14:24:58 [INFO] [MAIN] Total time taken: 13.133467458s
+ADD 200
+2024/06/25 14:24:59 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:24:59 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:25:19 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 9610
+2024/06/25 14:25:19 [INFO] [MAIN] Total time taken: 19.282188083s
+DEL 200
+2024/06/25 14:25:21 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:21 [INFO] [AS3] posting request to https://10.155.223.51/mgmt/shared/appsvcs/declare/bigip-ctlr-ns-1
+2024/06/25 14:25:35 [INFO] [AS3] Response from BIG-IP: code: 200, tenant: bigip-ctlr-ns-1, message: success, runTime: 7500
+2024/06/25 14:25:35 [INFO] [MAIN] Total time taken: 14.673752333s
+ADD 210
+2024/06/25 14:25:37 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:37 [INFO] [MAIN] Total time taken: 56.334µs
+DEL 210
+2024/06/25 14:25:39 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:39 [INFO] [MAIN] Total time taken: 20.584µs
+ADD 220
+2024/06/25 14:25:41 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:41 [INFO] [MAIN] Total time taken: 53µs
+DEL 220
+2024/06/25 14:25:43 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:43 [INFO] [MAIN] Total time taken: 38.417µs
+ADD 230
+2024/06/25 14:25:45 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:45 [INFO] [MAIN] Total time taken: 57.083µs
+DEL 230
+2024/06/25 14:25:47 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:47 [INFO] [MAIN] Total time taken: 40.083µs
+ADD 240
+2024/06/25 14:25:49 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:49 [INFO] [MAIN] Total time taken: 58.5µs
+DEL 240
+2024/06/25 14:25:51 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:51 [INFO] [MAIN] Total time taken: 41.625µs
+ADD 250
+2024/06/25 14:25:52 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:52 [INFO] [MAIN] Total time taken: 36.709µs
+DEL 250
+2024/06/25 14:25:54 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:54 [INFO] [MAIN] Total time taken: 42.959µs
+ADD 260
+2024/06/25 14:25:56 [INFO] [MAIN] Starting: AS3 Performance Benchmark
+2024/06/25 14:25:56 [INFO] [MAIN] Total time taken: 54µs

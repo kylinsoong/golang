@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/kylinsoong/as3-benchmark/pkg/vlogger"
+	log "github.com/kylinsoong/golang/as3-benchmark/pkg/vlogger"
 )
 
 var (
@@ -282,7 +282,7 @@ func getAS3ObjectFromTemplate(template as3Template) (as3Object, bool) {
 				)
 			}
 			if len(as3[tenantName(tn)][appName(an)]) == 0 {
-				fmt.Printf("[AS3] No pools declared for application: %s, tenant: %s\n", an, tn)
+				//fmt.Printf("[AS3] No pools declared for application: %s, tenant: %s\n", an, tn)
 			}
 		}
 	}

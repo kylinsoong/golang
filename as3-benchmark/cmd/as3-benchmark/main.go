@@ -1,8 +1,3 @@
-/*
-How to run?
-
-go run cmd/as3-benchmark/main.go --ops=del --declaration=$(pwd)/cm1000.txt --bigip-host=192.168.45.52 --bigip-username=admin --bigip-password=admin
-*/
 package main
 
 import (
@@ -11,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/kylinsoong/as3-benchmark/pkg/as3perf"
-	log "github.com/kylinsoong/as3-benchmark/pkg/vlogger"
-	clog "github.com/kylinsoong/as3-benchmark/pkg/vlogger/console"
+	. "github.com/kylinsoong/golang/as3-benchmark/pkg/as3perf"
+	log "github.com/kylinsoong/golang/as3-benchmark/pkg/vlogger"
+	clog "github.com/kylinsoong/golang/as3-benchmark/pkg/vlogger/console"
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
 )
