@@ -1,4 +1,9 @@
-= How to run
+= AS3 Mock
+:toc: manual
+
+AS3 Mock service for connectivity test in architecture.
+
+== How to run from source code
 
 [source, bash]
 .*Run From Source Code*
@@ -17,15 +22,26 @@ go build -o as3-mock -ldflags "-X main.version=1.0.0" cmd/as3-mock/*.go
 ./as3-mock --tls-certificate=$(pwd)/cert/certificate.crt --tls-private=$(pwd)/cert/private.key
 ----
 
-[source, bash]
-.*Build Source Code to Docker Image & Run locally*
-----
-docker build -t cloudadc/as3-mock:0.2 -f Dockerfile .
-docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2
+== Build Docker Image
 
-// build docker image & run (arm64)
-docker build -t cloudadc/as3-mock:0.2-arm64 -f Dockerfile.arm64 .
-docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2-arm64 
+[source, bash]
+.*Build docker image*
+----
+docker buildx create --use
+docker buildx inspect --bootstrap
+docker buildx build --platform linux/amd64,linux/arm64  -t cloudadc/as3-mock:0.5 --push -f Dockerfile .
+----
+
+[source, bash]
+.*Run docker image on local*
+----
+docker run -it --rm -p 443:443 cloudadc/as3-mock:0.5
+----
+
+[source, bash]
+.*Run on K8S*
+----
+kubectl apply -f as3-mock.yaml
 ----
 
 == Current Supported API
@@ -34,7 +50,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2-arm64
 
 [source, bash]
 ----
-% curl -s -k -u "admin:admin" -X GET https://127.0.0.2/mgmt/tm/shared/licensing/registration 
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/tm/shared/licensing/registration 
 {
   "vendor": "F5 Networks, Inc.",
   "licensedDateTime": "2024-01-10T00:00:00-08:00",
@@ -49,7 +65,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2-arm64
 
 [source, bash]
 ----
-% curl -s -k -u "admin:admin" -X GET https://127.0.0.2/mgmt/shared/appsvcs/info
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/shared/appsvcs/info
 {
   "version": "3.36.1",
   "release": "1",
@@ -62,7 +78,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2-arm64
 
 [source, bash]
 ----
-% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/emptyAS3Declaration.json https://127.0.0.2/mgmt/shared/appsvcs/declare/cistest002 
+% curl -s -k -u "admin:admin" -X POST -H "Content-Type: application/json" -d @$(pwd)/emptyAS3Declaration.json https://127.0.0.1/mgmt/shared/appsvcs/declare/cistest002 
 {
   "declaration": {
     "class": "ADC",
@@ -85,7 +101,7 @@ docker run -it --rm -p 443:443 cloudadc/as3-mock:0.2-arm64
 
 [source, bash]
 ----
-% curl -sk https://127.0.0.2/mgmt/shared/authn/login -X POST -H "Content-Type: application/json"  -d '{"username":"admin", "password":"F5demo@666", "loginProviderName":"tmos"}'
+% curl -sk https://127.0.0.1/mgmt/shared/authn/login -X POST -H "Content-Type: application/json"  -d '{"username":"admin", "password":"F5demo@666", "loginProviderName":"tmos"}'
 {
   "username": "admin",
   "loginReference": {

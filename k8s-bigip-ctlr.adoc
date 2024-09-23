@@ -1,6 +1,42 @@
 = bigip container codebase debug 
 :toc: manual
 
+== Set up local environment
+
+=== Prepare a k8s environment
+
+[source, bash]
+.*1. create a single node K8S cluster*
+----
+kk create cluster
+----
+
+[source, bash]
+.*2. create a test application*
+----
+kubectl apply -f nginx.yaml
+----
+
+* link:etc/files/nginx.yaml[nginx.yaml]
+
+[source, bash]
+.*3. test application*
+----
+~# curl http://$NODE_IP:30007 -I
+HTTP/1.1 200 OK
+Server: nginx/1.27.1
+Date: Mon, 23 Sep 2024 03:49:09 GMT
+Content-Type: text/plain
+Content-Length: 405
+Connection: keep-alive
+----
+
+[source, bash]
+.*4. clean application*
+----
+kubectl delete -f nginx.yaml 
+----
+
 == Run Local
 
 [source, bash]
