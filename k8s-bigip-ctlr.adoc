@@ -37,7 +37,108 @@ Connection: keep-alive
 kubectl delete -f nginx.yaml 
 ----
 
-== Run Local
+=== Start AS3 Mock Service
+
+[source, bash]
+.*1. Start AS3 Mock*
+----
+docker run -it --rm -p 443:443 cloudadc/as3-mock:0.5
+----
+
+[source, bash]
+.*2. Test AS3 Mock*
+----
+% curl -s -k -u "admin:admin" -X GET https://127.0.0.1/mgmt/shared/appsvcs/info
+{
+  "version": "3.36.1",
+  "release": "1",
+  "schemaCurrent": "3.36.0",
+  "schemaMinimum": "3.0.0"
+}
+----
+
+=== Get Source Code
+
+*1. Download Source Code*
+
+* All Release: https://github.com/F5Networks/k8s-bigip-ctlr/releases
+* 2.17.1: https://github.com/F5Networks/k8s-bigip-ctlr/archive/refs/tags/v2.17.1.zip
+
+[source, bash]
+.*2. Prepare Source Code*
+----
+unzip k8s-bigip-ctlr-2.17.1.zip 
+cd k8s-bigip-ctlr-2.17.1
+vim cmd/k8s-bigip-ctlr/main.go
+----
+
+[source, bash]
+.*3. Comment out from line 1122 to line 1154*
+----
+1122 /*              
+1123                 bs := bigIPSection{
+1124                         BigIPUsername:   *bigIPUsername,
+1125                         BigIPPassword:   *bigIPPassword,
+1126                         BigIPURL:        *bigIPURL,
+1127                         BigIPPartitions: *bigIPPartitions,
+1128                 }
+1129                 
+1130                 subPidCh, err := startPythonDriver(getConfigWriter(), gs, bs, *pythonBaseDir)
+1131                 if nil != err {
+1132                         log.Fatalf("Could not initialize subprocess configuration: %v", err)
+1133                 }
+1134                 subPid := <-subPidCh
+1135                 defer func(pid int) {
+1136                         if 0 != pid {
+1137                                 var proc *os.Process
+1138                                 proc, err = os.FindProcess(pid)
+1139                                 if nil != err {
+1140                                         log.Warningf("Failed to find sub-process on exit: %v", err)
+1141                                 }
+1142                                 err = proc.Signal(os.Interrupt)
+1143                                 if nil != err {
+1144                                         log.Warningf("Could not stop sub-process on exit: %d - %v", pid, err)
+1145                                 }
+1146                         }
+1147                 }(subPid)
+1148                 
+1149                 // Add health check e.g. is Python process still there?
+1150                 hc := &health.HealthChecker{
+1151                         SubPID: subPid,
+1152                 }
+1153                 http.Handle("/health", hc.HealthCheckHandler())
+1154 */ 
+----
+
+[source, bash]
+.*4. Delete test code in main directory*
+----
+rm cmd/k8s-bigip-ctlr/main_test.go 
+cmd/k8s-bigip-ctlr/k8s_bigip_ctlr_suite_test.go
+rm cmd/k8s-bigip-ctlr/test/*
+----
+
+=== Run Code
+
+[source, bash]
+.*1. Copy K8S config*
+----
+cat ~/.kube/config
+----
+
+[source, bash]
+.*2. Prepare dependencies*
+----
+go mod tidy
+----
+
+[source, bash]
+.*3. Start Code*
+----
+go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=127.0.0.1 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/Downloads/cis/config --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/Downloads/cis/k8s-bigip-ctlr-2.17.1/schemas/ --disable-teems=true --periodic-sync-interval=60 --namespace-label=cis.f5.com/zone=zone-1
+----
+
+*Optionally, use below commands to run older version code:*
 
 [source, bash]
 .*Run 2.9.1*
@@ -59,6 +160,14 @@ go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --b
 
 == Run via VS Code
 
+=== Open Source Code in VS Code
+
+image:etc/img/vs-code-open.jpg[Image,1200,365]
+
+=== Create go lunch.json
+
+image:etc/img/vs-code-lunch-json.jpg[Image,1200,270]
+
 [source, json]
 .*launch.json*
 ----
@@ -70,7 +179,7 @@ go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --b
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "/Users/k.song/src/golang/k8s-bigip-ctlr-2.16.1/cmd/k8s-bigip-ctlr",
+            "program": "/Users/k.song/Downloads/cis/k8s-bigip-ctlr-2.17.1/cmd/k8s-bigip-ctlr",
             "env": {},
             "args": [
                 "--bigip-username=admin",
@@ -78,9 +187,8 @@ go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --b
                 "--bigip-url=127.0.0.1",
                 "--log-level=DEBUG",
                 "--running-in-cluster=false",
-                "--kubeconfig=/Users/k.song/src/golang/config",
-                "--node-poll-interval=3600",
-                "--periodic-sync-interval=3600",
+                "--kubeconfig=/Users/k.song/Downloads/cis/config",
+                "--periodic-sync-interval=120",
                 "--manage-ingress=false",
                 "--manage-configmaps=true",
                 "--insecure=true",
@@ -89,8 +197,9 @@ go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --b
                 "--pool-member-type=cluster",
                 "--bigip-partition=k8s",
                 "--log-as3-response=true",
-                "--schema-db-base-dir=file:///Users/k.song/src/golang/k8s-bigip-ctlr-2.16.1/schemas/",
-                "--namespace=f5-hub-1"
+                "--disable-teems=true",
+                "--schema-db-base-dir=file:///Users/k.song/Downloads/cis/k8s-bigip-ctlr-2.17.1/schemas/",
+                "--namespace-label=cis.f5.com/zone=zone-1"
             ]
         }
     ]

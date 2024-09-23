@@ -53,6 +53,10 @@ func main() {
 }
 ----
 
+== Getting started from real project
+
+link:k8s-bigip-ctlr.adoc[project k8s-bigip-ctlr]
+
 == Work with Go standard project
 
 === Project Structure
