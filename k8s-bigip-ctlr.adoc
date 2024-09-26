@@ -114,7 +114,7 @@ vim cmd/k8s-bigip-ctlr/main.go
 .*4. Delete test code in main directory*
 ----
 rm cmd/k8s-bigip-ctlr/main_test.go 
-cmd/k8s-bigip-ctlr/k8s_bigip_ctlr_suite_test.go
+rm cmd/k8s-bigip-ctlr/k8s_bigip_ctlr_suite_test.go
 rm cmd/k8s-bigip-ctlr/test/*
 ----
 
@@ -135,6 +135,8 @@ go mod tidy
 [source, bash]
 .*3. Start Code*
 ----
+go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=127.0.0.1 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/.kube/config  --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/Downloads/cis/k8s-bigip-ctlr-2.17.1/schemas/ --disable-teems=true --periodic-sync-interval=30 --namespace-label=cis.f5.com/zone=zone-1
+
 go run cmd/k8s-bigip-ctlr/*.go --bigip-username=admin --bigip-password=admin --bigip-url=127.0.0.1 --log-level=DEBUG --running-in-cluster=false --kubeconfig=/Users/k.song/Downloads/cis/config --hubmode=true --manage-ingress=false --manage-configmaps=true --insecure=true --filter-tenants=true --pool-member-type=cluster --bigip-partition=k8s --log-as3-response=true --schema-db-base-dir=file:///Users/k.song/Downloads/cis/k8s-bigip-ctlr-2.17.1/schemas/ --disable-teems=true --periodic-sync-interval=60 --namespace-label=cis.f5.com/zone=zone-1
 ----
 
