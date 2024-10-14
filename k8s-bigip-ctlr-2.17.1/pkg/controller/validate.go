@@ -1,0 +1,219 @@
+/*-
+* Copyright (c) 2016-2021, F5 Networks, Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+ */
+
+package controller
+
+import (
+	"fmt"
+	cisapiv1 "github.com/F5Networks/k8s-bigip-ctlr/v2/config/apis/cis/v1"
+	log "github.com/F5Networks/k8s-bigip-ctlr/v2/pkg/vlogger"
+	"k8s.io/apimachinery/pkg/util/intstr"
+)
+
+func (ctlr *Controller) checkValidVirtualServer(
+	vsResource *cisapiv1.VirtualServer,
+) bool {
+
+	vsNamespace := vsResource.ObjectMeta.Namespace
+	vsName := vsResource.ObjectMeta.Name
+	vkey := fmt.Sprintf("%s/%s", vsNamespace, vsName)
+
+	crInf, ok := ctlr.getNamespacedCRInformer(vsNamespace)
+	if !ok {
+		log.Errorf("%v Informer not found for namespace: %v", ctlr.getMultiClusterLog(), vsNamespace)
+		return false
+	}
+	// Check if the virtual exists and valid for us.
+	_, virtualFound, _ := crInf.vsInformer.GetIndexer().GetByKey(vkey)
+	if !virtualFound {
+		log.Infof("VirtualServer %s is invalid", vsName)
+		return false
+	}
+
+	// Check if Partition is set as Common
+	if vsResource.Spec.Partition == CommonPartition {
+		log.Errorf("VirtualServer %s cannot be created in Common partition", vsName)
+		return false
+	}
+
+	// Check if HTTPTraffic is set for insecure VS
+	if vsResource.Spec.TLSProfileName == "" && vsResource.Spec.HTTPTraffic != "" {
+		log.Errorf("HTTPTraffic not allowed to be set for insecure VirtualServer: %v", vsName)
+		return false
+	}
+
+	bindAddr := vsResource.Spec.VirtualServerAddress
+	if ctlr.ipamCli == nil {
+
+		// This ensures that pool-only mode only logs the message below the first
+		// time we see a config.
+		if bindAddr == "" {
+			log.Infof("No IP was specified for the virtual server %s", vsName)
+			return false
+		}
+	} else {
+		ipamLabel := vsResource.Spec.IPAMLabel
+		if ipamLabel == "" && bindAddr == "" {
+			log.Infof("No ipamLabel was specified for the virtual server %s", vsName)
+			return false
+		}
+	}
+	for _, pool := range vsResource.Spec.Pools {
+		if pool.MultiClusterServices == nil {
+			continue
+		}
+		for _, mcs := range pool.MultiClusterServices {
+			err := ctlr.checkValidExtendedService(mcs)
+			if err != nil {
+				// In case of invalid extendedServiceReference, just log the error and proceed
+				log.Errorf("[MultiCluster] invalid extendedServiceReference: %v for VS: %s: %v", mcs, vsName, err)
+				continue
+			}
+		}
+	}
+
+	return true
+}
+
+func (ctlr *Controller) checkValidTransportServer(
+	tsResource *cisapiv1.TransportServer,
+) bool {
+
+	vsNamespace := tsResource.ObjectMeta.Namespace
+	vsName := tsResource.ObjectMeta.Name
+	vkey := fmt.Sprintf("%s/%s", vsNamespace, vsName)
+
+	crInf, ok := ctlr.getNamespacedCRInformer(vsNamespace)
+	if !ok {
+		log.Errorf("%v Informer not found for namespace: %v", ctlr.getMultiClusterLog(), vsNamespace)
+		return false
+	}
+	// Check if the virtual exists and valid for us.
+	_, virtualFound, _ := crInf.tsInformer.GetIndexer().GetByKey(vkey)
+	if !virtualFound {
+		log.Infof("TransportServer %s is invalid", vsName)
+		return false
+	}
+
+	// Check if Partition is set as Common
+	if tsResource.Spec.Partition == CommonPartition {
+		log.Errorf("TransportServer %s cannot be created in Common partition", vsName)
+		return false
+	}
+
+	bindAddr := tsResource.Spec.VirtualServerAddress
+
+	if ctlr.ipamCli == nil {
+		// This ensures that pool-only mode only logs the message below the first
+		// time we see a config.
+		if bindAddr == "" {
+			log.Infof("No IP was specified for the transport server %s", vsName)
+			return false
+		}
+	} else {
+		ipamLabel := tsResource.Spec.IPAMLabel
+		if ipamLabel == "" && bindAddr == "" {
+			log.Infof("No ipamLabel was specified for the transport server %s", vsName)
+			return false
+		}
+	}
+
+	if tsResource.Spec.Type == "" {
+		tsResource.Spec.Type = "tcp"
+	} else if !(tsResource.Spec.Type == "udp" || tsResource.Spec.Type == "tcp" || tsResource.Spec.Type == "sctp") {
+		log.Errorf("Invalid type value for transport server %s. Supported values are tcp, udp and sctp only", vsName)
+		return false
+	}
+	if tsResource.Spec.Pool.MultiClusterServices != nil {
+		for _, mcs := range tsResource.Spec.Pool.MultiClusterServices {
+			err := ctlr.checkValidExtendedService(mcs)
+			if err != nil {
+				// In case of invalid extendedServiceReference, just log the error and proceed
+				log.Errorf("[MultiCluster] invalid extendedServiceReference: %v for TS: %s: %v", mcs, vsName, err)
+				continue
+			}
+		}
+	}
+	return true
+}
+
+func (ctlr *Controller) checkValidIngressLink(
+	il *cisapiv1.IngressLink,
+) bool {
+
+	ilNamespace := il.ObjectMeta.Namespace
+	ilName := il.ObjectMeta.Name
+	ilkey := fmt.Sprintf("%s/%s", ilNamespace, ilName)
+
+	crInf, ok := ctlr.getNamespacedCRInformer(ilNamespace)
+	if !ok {
+		log.Errorf("%v Informer not found for namespace: %v", ctlr.getMultiClusterLog(), ilNamespace)
+		return false
+	}
+	// Check if the virtual exists and valid for us.
+	_, virtualFound, _ := crInf.ilInformer.GetIndexer().GetByKey(ilkey)
+	if !virtualFound {
+		log.Infof("IngressLink %s is invalid", ilName)
+		return false
+	}
+
+	// Check if Partition is set as Common
+	if il.Spec.Partition == CommonPartition {
+		log.Errorf("IngressLink %s cannot be created in Common partition", ilName)
+		return false
+	}
+
+	bindAddr := il.Spec.VirtualServerAddress
+
+	if ctlr.ipamCli == nil {
+		if bindAddr == "" {
+			log.Infof("No IP was specified for ingresslink %s", ilName)
+			return false
+		}
+	} else {
+		ipamLabel := il.Spec.IPAMLabel
+		if ipamLabel == "" && bindAddr == "" {
+			log.Infof("No ipamLabel was specified for the il server %s", ilName)
+			return false
+		}
+	}
+	return true
+}
+
+// checkValidExtendedService checks if extended service is valid or not
+func (ctlr *Controller) checkValidExtendedService(mcs cisapiv1.MultiClusterServiceReference) error {
+	// Check if cis running in multiCluster mode
+	if ctlr.multiClusterMode == "" {
+		return fmt.Errorf("CIS is not running in multiCluster mode")
+	}
+	// Check if all required parameters are specified
+	if mcs.SvcName == "" || mcs.Namespace == "" || mcs.ClusterName == "" || mcs.ServicePort == (intstr.IntOrString{}) {
+		return fmt.Errorf("some of the mandatory parameters (clusterName/namespace/service/servicePort) are missing")
+	}
+	if mcs.ClusterName != "" {
+		// Check if cluster config is provided for the cluster where the service is running
+		if _, ok := ctlr.multiClusterConfigs.ClusterConfigs[mcs.ClusterName]; !ok {
+			return fmt.Errorf("cluster config for the cluster %s is not provided in extended configmap", mcs.ClusterName)
+		}
+	}
+	if ctlr.multiClusterConfigs != nil && mcs.ClusterName == ctlr.multiClusterConfigs.LocalClusterName ||
+		mcs.ClusterName == ctlr.multiClusterConfigs.HAPairClusterName {
+		// Check if the service is running in any of the HA clusters
+		return fmt.Errorf("service is running in HA cluster, currently CIS doesn't support services running in " +
+			"HA clusters to be defined in extendedServiceReference")
+	}
+	return nil
+}
